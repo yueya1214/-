@@ -1,0 +1,23 @@
+name = "stickman-platformer"
+compatibility_date = "2023-09-10"
+
+# 配置 Pages Functions
+[site]
+bucket = "./public"
+
+[build]
+command = "echo 'No build required'"
+
+# D1 数据库绑定
+[[d1_databases]]
+binding = "SCORES_DB"
+database_name = "stickman_scores"
+database_id = "<YOUR_DATABASE_ID>"  # 请在部署前替换为你的实际数据库ID
+
+# 配置构建输出目录
+[build.upload]
+format = "directory"
+
+# 允许使用绑定
+[env.production]
+d1_databases = [{ binding = "SCORES_DB", database_name = "stickman_scores", database_id = "<YOUR_DATABASE_ID>" }] 
