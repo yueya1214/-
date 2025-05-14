@@ -1,114 +1,138 @@
-# 火柴人大冒险 - 横板闯关游戏
+# 火柴人平台冒险游戏
 
-一个基于Phaser.js的2D横板闯关游戏，玩家需要控制火柴人角色收集金币、躲避或攻击敌人，最终到达终点。游戏支持高分记录，使用Cloudflare Pages和D1数据库部署。
+一个基于Phaser 3的2D横向卷轴平台游戏，使用HTML, JavaScript和CSS开发，可部署在Cloudflare Pages上。游戏使用Cloudflare D1数据库存储高分记录。
 
-## 游戏特性
+## 游戏特点
 
-- 简单直观的控制：方向键移动，空格键攻击
-- 收集金币获得分数
-- 击败敌人获得更多分数
-- 三条生命值系统
-- 独特的游戏音效和粒子效果
-- 高分榜系统保存玩家成绩
-
-## 本地开发
-
-要在本地运行此项目，请按照以下步骤操作：
-
-1. 克隆项目到本地：
-   ```
-   git clone <repository-url>
-   cd stickman-platformer
-   ```
-
-2. 安装Wrangler CLI工具（用于Cloudflare Pages和D1数据库）：
-   ```
-   npm install -g wrangler
-   ```
-
-3. 创建D1数据库（需要Cloudflare账户）：
-   ```
-   wrangler d1 create stickman_scores
-   ```
-
-4. 使用以下SQL创建scores表：
-   ```
-   wrangler d1 execute stickman_scores --command "CREATE TABLE scores (id INTEGER PRIMARY KEY AUTOINCREMENT, player_name TEXT NOT NULL, score INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
-   ```
-
-5. 更新wrangler.toml中的数据库ID（在上一步创建数据库后，你将收到一个数据库ID）：
-   ```toml
-   database_id = "你的数据库ID在这里"
-   ```
-
-6. 使用Wrangler启动本地开发服务器：
-   ```
-   wrangler pages dev
-   ```
-
-## 部署到Cloudflare Pages
-
-1. 推送你的代码到GitHub仓库
-
-2. 在Cloudflare Dashboard中，转到Pages并创建一个新项目
-
-3. 连接你的GitHub仓库并配置以下设置：
-   - 构建命令: `echo 'No build required'`  
-   - 输出目录: `./` (或者你的静态文件所在的目录)
-
-4. 在"环境变量"部分，添加D1数据库绑定：
-   - 变量名: `SCORES_DB`
-   - 值: 选择你创建的`stickman_scores`数据库
-
-5. 部署你的项目
-
-## 技术栈
-
-- **前端**：HTML, CSS, JavaScript
-- **游戏引擎**：Phaser 3
-- **后端**：Cloudflare Pages Functions
-- **数据库**：Cloudflare D1 (SQLite)
+- 火柴人主角，可以左右移动、跳跃和攻击
+- 敌人AI，会在指定区域巡逻
+- 可收集金币增加分数
+- 高分记录系统
+- 简单的平台关卡设计
+- 使用程序化生成的图形（无需外部图像资源）
 
 ## 游戏控制
 
-- **←/→ 方向键**：左右移动
-- **↑ 方向键**：跳跃
-- **空格键**：攻击
+- **左右方向键**: 移动
+- **上方向键**: 跳跃
+- **空格键**: 攻击
 
-## 游戏目标
+## 本地开发
 
-1. 收集尽可能多的金币
-2. 击败或避开敌人
-3. 避开尖刺等障碍物
-4. 到达关卡终点
-5. 获得最高分数
+### 前提条件
+
+- [Node.js](https://nodejs.org/) (推荐v16以上)
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
+
+### 安装步骤
+
+1. 克隆项目或下载源码
+
+2. 安装Wrangler CLI工具：
+
+```bash
+npm install -g wrangler
+```
+
+3. 登录到你的Cloudflare账户：
+
+```bash
+wrangler login
+```
+
+4. 创建D1数据库：
+
+```bash
+wrangler d1 create stick_figure_game
+```
+
+5. 记录创建的数据库ID，并更新`wrangler.toml`文件中的`database_id`字段。
+
+6. 创建数据库表：
+
+```bash
+wrangler d1 execute stick_figure_game --file=schema.sql
+```
+
+7. 启动本地开发服务器：
+
+```bash
+wrangler pages dev --binding=DB=your-database-id
+```
+
+8. 访问http://localhost:8788 查看游戏
 
 ## 项目结构
 
 ```
 /
-├── index.html           # 主HTML文件
-├── style.css            # 样式文件
-├── game.js              # 游戏逻辑
-├── functions/           # Cloudflare Pages Functions
+├── index.html          # 游戏的HTML主文件
+├── game.js             # 游戏的主要JavaScript代码
+├── style.css           # CSS样式
+├── functions/
 │   └── api/
-│       └── score.js     # 高分API函数
-├── wrangler.toml        # Cloudflare配置
-└── README.md            # 项目说明
+│       └── score.js    # 处理高分API的Pages Functions
+├── schema.sql          # 数据库模式定义
+├── wrangler.toml       # Cloudflare Wrangler配置
+└── README.md           # 项目说明文档
 ```
 
-## 自定义游戏
+## 数据库设置
 
-你可以通过修改以下文件来自定义游戏：
+创建`schema.sql`文件，内容如下：
 
-- **game.js**：调整游戏难度、敌人行为和关卡设计
-- **style.css**：修改游戏UI和外观
-- **index.html**：更改游戏标题和说明文本
+```sql
+DROP TABLE IF EXISTS scores;
+CREATE TABLE scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  player_name TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## 部署到Cloudflare Pages
+
+1. 推送代码到GitHub、GitLab或Bitbucket代码仓库。
+
+2. 在Cloudflare Pages控制台上创建新项目并关联代码仓库。
+
+3. 选择部署分支，设置构建配置：
+   - 构建命令：留空
+   - 构建输出目录：`./`
+   - 环境变量：根据需要配置
+
+4. 部署完成后，需要创建和绑定D1数据库：
+
+```bash
+# 创建数据库（如果还没有创建）
+wrangler d1 create stick_figure_game
+
+# 创建数据库表
+wrangler d1 execute stick_figure_game --file=schema.sql
+
+# 绑定数据库到Pages项目
+wrangler pages deployment create --binding=DB=your-database-id
+```
+
+5. 在Cloudflare Pages的"Settings">"Functions">"D1 Database Bindings"中将D1数据库绑定到`DB`。
+
+## 优化建议
+
+- 自定义游戏资源以减少外部依赖
+- 添加更多关卡和敌人类型
+- 实现移动端触控支持
+- 添加音乐和更多音效
+- 实现保存游戏进度的功能
+
+## 浏览器兼容性
+
+游戏兼容以下现代浏览器：
+- Google Chrome (最新版)
+- Mozilla Firefox (最新版)
+- Microsoft Edge (最新版)
+- Safari (最新版)
 
 ## 许可证
 
-MIT
-
-## 贡献
-
-欢迎提交问题和改进建议！ 
+MIT 

@@ -2,12 +2,12 @@
 const config = {
     type: Phaser.AUTO,
     width: 800,
-    height: 450,
-    parent: 'game-canvas',
+    height: 600,
+    parent: 'game-container',
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 800 },
+            gravity: { y: 1000 },
             debug: false
         }
     },
@@ -15,212 +15,208 @@ const config = {
         preload: preload,
         create: create,
         update: update
-    },
-    pixelArt: false,
-    roundPixels: true
+    }
 };
 
 // 游戏变量
-let game;
+let game = new Phaser.Game(config);
 let player;
 let platforms;
-let cursors;
 let coins;
 let enemies;
-let spikes;
-let finishFlag;
+let cursors;
 let scoreText;
-let livesIcons;
-let gameOver = false;
+let livesText;
 let score = 0;
 let lives = 3;
-let playerName = '玩家';
-let sounds = {};
+let gameOver = false;
+let finishLine;
+let playerDirection = 'right';
+let jumpSound;
+let coinSound;
 
-// 启动游戏
-window.onload = function() {
-    loadHighScores();
-    setupEventListeners();
-};
-
-// 设置事件监听器
-function setupEventListeners() {
-    document.getElementById('start-button').addEventListener('click', startGame);
-    document.getElementById('restart-button').addEventListener('click', restartGame);
-}
-
-// 开始游戏
-function startGame() {
-    const inputName = document.getElementById('player-name').value.trim();
-    if (inputName) {
-        playerName = inputName;
-    }
-    
-    document.getElementById('start-screen').classList.add('hidden');
-    
-    if (!game) {
-        game = new Phaser.Game(config);
-    } else {
-        restartGame();
-    }
-}
-
-// 重新开始游戏
-function restartGame() {
-    document.getElementById('game-over-screen').classList.add('hidden');
-    gameOver = false;
-    score = 0;
-    lives = 3;
-    game.scene.start('default');
-}
-
-// 加载资源
+// 资源预加载
 function preload() {
-    // 创建加载进度条
-    const progressBar = this.add.graphics();
-    const progressBox = this.add.graphics();
-    progressBox.fillStyle(0x222222, 0.8);
-    progressBox.fillRect(240, 270, 320, 50);
+    // 加载图像
+    this.load.image('sky', 'https://raw.githubusercontent.com/photonstorm/phaser3-examples/master/public/assets/skies/space3.png');
+    this.load.image('ground', 'https://raw.githubusercontent.com/photonstorm/phaser3-examples/master/public/assets/sprites/platform.png');
+    this.load.image('coin', 'https://raw.githubusercontent.com/photonstorm/phaser3-examples/master/public/assets/sprites/coin.png');
+    this.load.image('flag', 'https://raw.githubusercontent.com/photonstorm/phaser3-examples/master/public/assets/sprites/healthbar.png');
     
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-    const loadingText = this.make.text({
-        x: width / 2,
-        y: height / 2 - 50,
-        text: '加载中...',
-        style: {
-            font: '20px monospace',
-            fill: '#ffffff'
-        }
-    });
-    loadingText.setOrigin(0.5, 0.5);
-    
-    const percentText = this.make.text({
-        x: width / 2,
-        y: height / 2 - 5,
-        text: '0%',
-        style: {
-            font: '18px monospace',
-            fill: '#ffffff'
-        }
-    });
-    percentText.setOrigin(0.5, 0.5);
-    
-    this.load.on('progress', function (value) {
-        percentText.setText(parseInt(value * 100) + '%');
-        progressBar.clear();
-        progressBar.fillStyle(0xffffff, 1);
-        progressBar.fillRect(250, 280, 300 * value, 30);
+    // 创建简单的火柴人纹理
+    this.load.on('complete', () => {
+        createStickmanTexture(this);
+        createEnemyTexture(this);
     });
     
-    this.load.on('complete', function () {
-        progressBar.destroy();
-        progressBox.destroy();
-        loadingText.destroy();
-        percentText.destroy();
-    });
-    
-    // 加载游戏资源
-    this.load.spritesheet('player', 'https://content.codecademy.com/courses/learn-phaser/Codey%20Tundra/codey.png', { 
-        frameWidth: 72, 
-        frameHeight: 90
-    });
-    
-    // 特效精灵图
-    this.load.spritesheet('explosion', 'https://examples.phaser.io/assets/particles/explosion.png', { 
-        frameWidth: 64, 
-        frameHeight: 64, 
-        endFrame: 23 
-    });
-    
-    // 平台和物品
-    this.load.image('ground', 'https://examples.phaser.io/assets/sprites/platform.png');
-    this.load.image('coin', 'https://examples.phaser.io/assets/sprites/coin.png');
-    this.load.image('spike', 'https://examples.phaser.io/assets/sprites/saw.png');
-    this.load.image('enemy', 'https://examples.phaser.io/assets/sprites/spaceman.png');
-    this.load.image('flag', 'https://examples.phaser.io/assets/sprites/healthbar.png');
-    this.load.image('background', 'https://examples.phaser.io/assets/skies/nebula.jpg');
-    this.load.image('heart', 'https://examples.phaser.io/assets/sprites/phaser-dude.png');
-    
-    // 音效
-    this.load.audio('jump', 'https://examples.phaser.io/assets/audio/SoundEffects/jump.mp3');
-    this.load.audio('coin_collect', 'https://examples.phaser.io/assets/audio/SoundEffects/coin.mp3');
-    this.load.audio('hurt', 'https://examples.phaser.io/assets/audio/SoundEffects/hurt.mp3');
-    this.load.audio('gameOver', 'https://examples.phaser.io/assets/audio/SoundEffects/death.mp3');
-    this.load.audio('victory', 'https://examples.phaser.io/assets/audio/SoundEffects/key.mp3');
-    this.load.audio('attack', 'https://examples.phaser.io/assets/audio/SoundEffects/shot.mp3');
+    // 加载音效
+    this.load.audio('jump', 'https://raw.githubusercontent.com/photonstorm/phaser3-examples/master/public/assets/audio/SoundEffects/jump.wav');
+    this.load.audio('coin', 'https://raw.githubusercontent.com/photonstorm/phaser3-examples/master/public/assets/audio/SoundEffects/coin.wav');
 }
 
-// 创建游戏
-function create() {
-    // 添加背景
-    this.add.image(400, 225, 'background').setScale(2);
+// 创建火柴人纹理
+function createStickmanTexture(scene) {
+    // 静止状态的火柴人
+    let graphics = scene.add.graphics();
+    graphics.lineStyle(3, 0x000000, 1);
     
-    // 创建音效
-    sounds.jump = this.sound.add('jump');
-    sounds.coinCollect = this.sound.add('coin_collect');
-    sounds.hurt = this.sound.add('hurt');
-    sounds.gameOver = this.sound.add('gameOver');
-    sounds.victory = this.sound.add('victory');
-    sounds.attack = this.sound.add('attack');
+    // 头部
+    graphics.strokeCircle(25, 10, 8);
+    
+    // 身体
+    graphics.lineBetween(25, 18, 25, 35);
+    
+    // 手臂
+    graphics.lineBetween(25, 22, 15, 30);
+    graphics.lineBetween(25, 22, 35, 30);
+    
+    // 腿部
+    graphics.lineBetween(25, 35, 15, 45);
+    graphics.lineBetween(25, 35, 35, 45);
+    
+    graphics.generateTexture('stickman-idle', 50, 50);
+    graphics.clear();
+    
+    // 跑步动画帧1
+    graphics.lineStyle(3, 0x000000, 1);
+    graphics.strokeCircle(25, 10, 8);
+    graphics.lineBetween(25, 18, 25, 35);
+    graphics.lineBetween(25, 22, 15, 30);
+    graphics.lineBetween(25, 22, 35, 15);
+    graphics.lineBetween(25, 35, 15, 30);
+    graphics.lineBetween(25, 35, 35, 45);
+    graphics.generateTexture('stickman-run1', 50, 50);
+    graphics.clear();
+    
+    // 跑步动画帧2
+    graphics.lineStyle(3, 0x000000, 1);
+    graphics.strokeCircle(25, 10, 8);
+    graphics.lineBetween(25, 18, 25, 35);
+    graphics.lineBetween(25, 22, 15, 15);
+    graphics.lineBetween(25, 22, 35, 30);
+    graphics.lineBetween(25, 35, 15, 45);
+    graphics.lineBetween(25, 35, 35, 30);
+    graphics.generateTexture('stickman-run2', 50, 50);
+    graphics.clear();
+    
+    // 跳跃动画
+    graphics.lineStyle(3, 0x000000, 1);
+    graphics.strokeCircle(25, 10, 8);
+    graphics.lineBetween(25, 18, 25, 35);
+    graphics.lineBetween(25, 22, 15, 15);
+    graphics.lineBetween(25, 22, 35, 15);
+    graphics.lineBetween(25, 35, 15, 45);
+    graphics.lineBetween(25, 35, 35, 45);
+    graphics.generateTexture('stickman-jump', 50, 50);
+    graphics.clear();
+    
+    // 攻击动画
+    graphics.lineStyle(3, 0x000000, 1);
+    graphics.strokeCircle(25, 10, 8);
+    graphics.lineBetween(25, 18, 25, 35);
+    graphics.lineBetween(25, 22, 10, 22); // 出拳的手臂
+    graphics.lineBetween(25, 22, 35, 30);
+    graphics.lineBetween(25, 35, 15, 45);
+    graphics.lineBetween(25, 35, 35, 45);
+    graphics.generateTexture('stickman-attack', 50, 50);
+    graphics.destroy();
+}
+
+// 创建敌人纹理
+function createEnemyTexture(scene) {
+    let graphics = scene.add.graphics();
+    graphics.lineStyle(3, 0xFF0000, 1);
+    
+    // 头部
+    graphics.strokeCircle(25, 10, 8);
+    
+    // 身体
+    graphics.lineBetween(25, 18, 25, 35);
+    
+    // 手臂
+    graphics.lineBetween(25, 22, 15, 30);
+    graphics.lineBetween(25, 22, 35, 30);
+    
+    // 腿部
+    graphics.lineBetween(25, 35, 15, 45);
+    graphics.lineBetween(25, 35, 35, 45);
+    
+    graphics.generateTexture('enemy', 50, 50);
+    graphics.destroy();
+}
+
+// 创建游戏场景
+function create() {
+    // 创建背景
+    this.add.image(400, 300, 'sky');
+    
+    // 加载音效
+    jumpSound = this.sound.add('jump');
+    coinSound = this.sound.add('coin');
     
     // 创建平台组
     platforms = this.physics.add.staticGroup();
     
     // 创建地面
-    platforms.create(400, 445, 'ground').setScale(2).refreshBody();
+    platforms.create(400, 580, 'ground').setScale(2).refreshBody();
     
     // 创建平台
-    platforms.create(600, 350, 'ground');
-    platforms.create(50, 250, 'ground');
-    platforms.create(400, 200, 'ground');
-    platforms.create(750, 150, 'ground');
+    platforms.create(600, 450, 'ground');
+    platforms.create(50, 350, 'ground');
+    platforms.create(750, 320, 'ground');
+    platforms.create(400, 240, 'ground');
+    platforms.create(100, 150, 'ground');
+    
+    // 创建终点线
+    finishLine = this.physics.add.sprite(750, 280, 'flag');
+    finishLine.setImmovable(true);
     
     // 创建玩家
-    player = this.physics.add.sprite(100, 350, 'player');
+    player = this.physics.add.sprite(100, 500, 'stickman-idle');
     player.setBounce(0.1);
     player.setCollideWorldBounds(true);
-    player.body.setSize(player.width * 0.7, player.height * 0.8, true);
-    player.isAttacking = false;
-    player.invincible = false;
+    player.body.setSize(20, 45);
+    player.body.setOffset(15, 5);
     
-    // 创建玩家动画
+    // 玩家动画
     this.anims.create({
-        key: 'left',
-        frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
-        frameRate: 10,
+        key: 'run',
+        frames: [
+            { key: 'stickman-run1' },
+            { key: 'stickman-run2' }
+        ],
+        frameRate: 8,
         repeat: -1
     });
     
     this.anims.create({
-        key: 'turn',
-        frames: [ { key: 'player', frame: 4 } ],
-        frameRate: 20
+        key: 'idle',
+        frames: [{ key: 'stickman-idle' }],
+        frameRate: 10
     });
     
     this.anims.create({
-        key: 'right',
-        frames: this.anims.generateFrameNumbers('player', { start: 5, end: 8 }),
+        key: 'jump',
+        frames: [{ key: 'stickman-jump' }],
+        frameRate: 10
+    });
+    
+    this.anims.create({
+        key: 'attack',
+        frames: [{ key: 'stickman-attack' }],
         frameRate: 10,
-        repeat: -1
+        duration: 300
     });
     
-    // 创建爆炸动画
-    this.anims.create({
-        key: 'explode',
-        frames: this.anims.generateFrameNumbers('explosion', { start: 0, end: 23 }),
-        frameRate: 20,
-        hideOnComplete: true
-    });
+    // 创建敌人组
+    enemies = this.physics.add.group();
     
-    // 设置攻击
-    this.input.keyboard.on('keydown-SPACE', function() {
-        if (!gameOver && !player.isAttacking) {
-            attack();
-        }
-    });
+    // 添加几个敌人
+    createEnemy(300, 535, 200, 400);
+    createEnemy(600, 405, 500, 700);
+    createEnemy(400, 195, 300, 500);
     
-    // 金币组
+    // 创建金币组
     coins = this.physics.add.group({
         key: 'coin',
         repeat: 11,
@@ -228,404 +224,273 @@ function create() {
     });
     
     coins.children.iterate(function (child) {
-        child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
-        child.setCircle(12);
-    });
-    
-    // 敌人组
-    enemies = this.physics.add.group();
-    createEnemy(300, 0);
-    createEnemy(500, 0);
-    createEnemy(700, 0);
-    
-    // 障碍组
-    spikes = this.physics.add.group();
-    spikes.create(300, 350, 'spike');
-    spikes.create(550, 150, 'spike');
-    spikes.create(150, 250, 'spike');
-    
-    spikes.children.iterate(function (child) {
+        child.setBounceY(Phaser.Math.FloatBetween(0.2, 0.4));
         child.setScale(0.5);
-        child.setCircle(20);
-        child.setBounce(0);
     });
     
-    // 终点旗帜
-    finishFlag = this.physics.add.sprite(750, 100, 'flag');
-    finishFlag.setScale(0.5);
-    
-    // 添加UI
-    const gameUI = document.createElement('div');
-    gameUI.className = 'game-ui';
-    gameUI.innerHTML = `得分: <span id="score-value">0</span>`;
-    document.getElementById('game-canvas').appendChild(gameUI);
-    
-    scoreText = { setText: function(val) { document.getElementById('score-value').innerText = val; } };
-    scoreText.setText('0');
-    
-    // 生命图标
-    livesIcons = this.add.group();
-    updateLivesDisplay(this);
+    // 添加分数和生命值文本
+    scoreText = this.add.text(16, 16, '分数: 0', { fontSize: '32px', fill: '#fff' });
+    livesText = this.add.text(16, 50, '生命: 3', { fontSize: '32px', fill: '#fff' });
     
     // 碰撞检测
     this.physics.add.collider(player, platforms);
     this.physics.add.collider(coins, platforms);
     this.physics.add.collider(enemies, platforms);
-    this.physics.add.collider(spikes, platforms);
     
+    // 重叠检测
     this.physics.add.overlap(player, coins, collectCoin, null, this);
     this.physics.add.overlap(player, enemies, hitEnemy, null, this);
-    this.physics.add.overlap(player, spikes, hitSpike, null, this);
-    this.physics.add.overlap(player, finishFlag, reachFinish, null, this);
+    this.physics.add.overlap(player, finishLine, reachFinish, null, this);
     
-    // 获取方向键
+    // 键盘控制
     cursors = this.input.keyboard.createCursorKeys();
+    attackKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    
+    // 玩家攻击状态
+    player.isAttacking = false;
+    
+    // 游戏结束处理
+    this.events.on('gameOver', function() {
+        document.getElementById('final-score').textContent = score;
+        document.getElementById('game-over').classList.remove('hidden');
+    });
 }
 
-// 更新游戏状态
+// 创建敌人函数
+function createEnemy(x, y, leftBound, rightBound) {
+    const enemy = enemies.create(x, y, 'enemy');
+    enemy.setBounce(0.1);
+    enemy.setCollideWorldBounds(true);
+    enemy.body.setSize(20, 45);
+    enemy.body.setOffset(15, 5);
+    enemy.leftBound = leftBound;
+    enemy.rightBound = rightBound;
+    enemy.direction = 'right';
+    enemy.setVelocityX(100);
+}
+
+// 游戏更新循环
 function update() {
     if (gameOver) {
         return;
     }
     
-    // 水平移动
+    // 玩家控制
     if (cursors.left.isDown) {
         player.setVelocityX(-200);
-        if (player.body.touching.down) {
-            player.anims.play('left', true);
+        if (playerDirection !== 'left') {
+            player.setFlipX(true);
+            playerDirection = 'left';
+        }
+        if (player.body.touching.down && !player.isAttacking) {
+            player.anims.play('run', true);
         }
     } else if (cursors.right.isDown) {
         player.setVelocityX(200);
-        if (player.body.touching.down) {
-            player.anims.play('right', true);
+        if (playerDirection !== 'right') {
+            player.setFlipX(false);
+            playerDirection = 'right';
+        }
+        if (player.body.touching.down && !player.isAttacking) {
+            player.anims.play('run', true);
         }
     } else {
         player.setVelocityX(0);
-        if (player.body.touching.down) {
-            player.anims.play('turn');
+        if (player.body.touching.down && !player.isAttacking) {
+            player.anims.play('idle');
         }
     }
     
     // 跳跃
-    if (cursors.up.isDown && player.body.touching.down) {
+    if (cursors.up.isDown && player.body.touching.down && !player.isAttacking) {
         player.setVelocityY(-500);
-        sounds.jump.play();
+        player.anims.play('jump');
+        jumpSound.play();
     }
     
-    // 移动敌人
-    enemies.children.iterate(function(enemy) {
-        if (enemy.active) {
-            if (enemy.body.velocity.x === 0) {
-                const dir = Phaser.Math.Between(0, 1) ? -1 : 1;
-                enemy.setVelocityX(50 * dir);
-                enemy.direction = dir;
+    // 攻击
+    if (Phaser.Input.Keyboard.JustDown(attackKey) && !player.isAttacking) {
+        player.isAttacking = true;
+        player.anims.play('attack');
+        
+        // 攻击区域 - 根据玩家朝向决定
+        let attackX = playerDirection === 'right' ? player.x + 30 : player.x - 30;
+        
+        // 检查是否有敌人在攻击范围内
+        enemies.children.iterate(function (enemy) {
+            if (enemy.active && Phaser.Math.Distance.Between(attackX, player.y, enemy.x, enemy.y) < 40) {
+                enemy.destroy();
+                score += 20;
+                scoreText.setText('分数: ' + score);
             }
-            
-            // 改变方向
-            if (enemy.body.blocked.left) {
-                enemy.setVelocityX(50);
-                enemy.direction = 1;
-            } else if (enemy.body.blocked.right) {
-                enemy.setVelocityX(-50);
-                enemy.direction = -1;
+        });
+        
+        // 攻击动画结束后重置攻击状态
+        this.time.delayedCall(300, function() {
+            player.isAttacking = false;
+        });
+    }
+    
+    // 敌人AI
+    enemies.children.iterate(function (enemy) {
+        if (enemy && enemy.active) {
+            if (enemy.x >= enemy.rightBound) {
+                enemy.setVelocityX(-100);
+                enemy.direction = 'left';
+                enemy.setFlipX(true);
+            } else if (enemy.x <= enemy.leftBound) {
+                enemy.setVelocityX(100);
+                enemy.direction = 'right';
+                enemy.setFlipX(false);
             }
-            
-            // 旋转敌人
-            enemy.rotation += 0.01 * enemy.direction;
         }
     });
-    
-    // 旋转金币
-    coins.children.iterate(function(coin) {
-        if (coin.active) {
-            coin.rotation += 0.05;
-        }
-    });
-    
-    // 旋转障碍物
-    spikes.children.iterate(function(spike) {
-        if (spike.active) {
-            spike.rotation += 0.02;
-        }
-    });
-}
-
-// 创建敌人
-function createEnemy(x, y) {
-    const enemy = enemies.create(x, y, 'enemy');
-    enemy.setBounce(0.2);
-    enemy.setCollideWorldBounds(true);
-    enemy.setVelocityX(Phaser.Math.Between(-50, 50));
-    enemy.direction = enemy.body.velocity.x > 0 ? 1 : -1;
-    enemy.setCircle(20);
-    return enemy;
 }
 
 // 收集金币
 function collectCoin(player, coin) {
     coin.disableBody(true, true);
-    sounds.coinCollect.play();
+    
+    // 播放音效
+    coinSound.play();
     
     // 增加分数
     score += 10;
-    scoreText.setText(score);
-    
-    // 特效
-    const explosion = this.add.sprite(coin.x, coin.y, 'explosion').setScale(0.5);
-    explosion.play('explode');
-    
-    // 创建漂浮文本
-    const floatingText = this.add.text(coin.x, coin.y - 20, '+10', { 
-        fontSize: '20px', 
-        fill: '#ffff00',
-        stroke: '#000',
-        strokeThickness: 3
-    }).setOrigin(0.5);
-    
-    this.tweens.add({
-        targets: floatingText,
-        y: floatingText.y - 50,
-        alpha: 0,
-        duration: 1000,
-        onComplete: function() { floatingText.destroy(); }
-    });
-    
-    // 如果收集了所有金币，创建新的一批
-    if (coins.countActive(true) === 0) {
-        coins.children.iterate(function (child) {
-            child.enableBody(true, child.x, 0, true, true);
-        });
-    }
+    scoreText.setText('分数: ' + score);
 }
 
-// 攻击敌人
-function attack() {
-    player.isAttacking = true;
-    sounds.attack.play();
-    
-    // 攻击动画效果
-    const attackCircle = game.scene.scenes[0].add.circle(
-        player.x + (player.flipX ? -40 : 40), 
-        player.y, 
-        40, 
-        0xffa500, 
-        0.7
-    );
-    
-    // 检查攻击范围内的敌人
-    enemies.children.iterate(function(enemy) {
-        if (enemy.active && Phaser.Math.Distance.Between(attackCircle.x, attackCircle.y, enemy.x, enemy.y) < 60) {
-            destroyEnemy(enemy);
-        }
-    });
-    
-    // 淡出攻击效果
-    game.scene.scenes[0].tweens.add({
-        targets: attackCircle,
-        alpha: 0,
-        scale: 1.5,
-        duration: 300,
-        onComplete: function() { 
-            attackCircle.destroy();
-            player.isAttacking = false;
-        }
-    });
-}
-
-// 销毁敌人
-function destroyEnemy(enemy) {
-    // 增加分数
-    score += 20;
-    scoreText.setText(score);
-    
-    // 特效
-    const explosion = game.scene.scenes[0].add.sprite(enemy.x, enemy.y, 'explosion');
-    explosion.play('explode');
-    sounds.hurt.play();
-    
-    // 创建漂浮文本
-    const floatingText = game.scene.scenes[0].add.text(enemy.x, enemy.y - 30, '+20', { 
-        fontSize: '24px', 
-        fill: '#ff0000',
-        stroke: '#000',
-        strokeThickness: 3
-    }).setOrigin(0.5);
-    
-    game.scene.scenes[0].tweens.add({
-        targets: floatingText,
-        y: floatingText.y - 80,
-        alpha: 0,
-        duration: 1500,
-        onComplete: function() { floatingText.destroy(); }
-    });
-    
-    enemy.disableBody(true, true);
-    
-    // 随机掉落金币
-    if (Phaser.Math.Between(0, 10) > 5) {
-        const coin = coins.create(enemy.x, enemy.y, 'coin');
-        coin.setBounceY(0.4);
-        coin.setCircle(12);
-    }
-}
-
-// 碰到敌人
+// 撞到敌人
 function hitEnemy(player, enemy) {
-    if (player.invincible) return;
-    
-    handleDamage();
-}
-
-// 碰到尖刺
-function hitSpike(player, spike) {
-    if (player.invincible) return;
-    
-    handleDamage();
-}
-
-// 处理伤害
-function handleDamage() {
-    lives--;
-    updateLivesDisplay(game.scene.scenes[0]);
-    sounds.hurt.play();
-    
-    // 设置无敌时间
-    player.invincible = true;
-    player.alpha = 0.5;
-    
-    // 击退效果
-    const knockbackX = player.x < 400 ? 150 : -150;
-    player.setVelocity(knockbackX, -200);
-    
-    // 闪烁动画
-    game.scene.scenes[0].tweens.add({
-        targets: player,
-        alpha: { from: 0.5, to: 1 },
-        duration: 100,
-        repeat: 10,
-        yoyo: true,
-        onComplete: function() {
-            player.alpha = 1;
-            player.invincible = false;
+    if (player.isAttacking) {
+        enemy.destroy();
+        score += 20;
+        scoreText.setText('分数: ' + score);
+    } else {
+        // 玩家被击中，失去一条命
+        lives--;
+        livesText.setText('生命: ' + lives);
+        
+        // 短暂无敌时间
+        player.setTint(0xff0000);
+        this.time.delayedCall(1000, function() {
+            player.clearTint();
+        });
+        
+        if (lives <= 0) {
+            gameOver = true;
+            player.setTint(0xff0000);
+            player.anims.play('idle');
+            this.physics.pause();
+            this.events.emit('gameOver');
         }
-    });
-    
-    // 检查游戏结束
-    if (lives <= 0) {
-        endGame(false);
-    }
-}
-
-// 更新生命显示
-function updateLivesDisplay(scene) {
-    livesIcons.clear(true, true);
-    
-    for (let i = 0; i < lives; i++) {
-        const icon = scene.add.image(720 - (i * 30), 30, 'heart').setScrollFactor(0);
-        icon.setScale(0.5);
-        livesIcons.add(icon);
     }
 }
 
 // 到达终点
 function reachFinish(player, flag) {
-    finishFlag.disableBody(true, true);
-    sounds.victory.play();
+    gameOver = true;
+    this.physics.pause();
     
-    // 增加得分
+    player.setTint(0x00ff00);
+    player.anims.play('idle');
+    
+    // 奖励完成关卡的分数
     score += 100;
-    scoreText.setText(score);
+    scoreText.setText('分数: ' + score);
     
-    // 胜利特效
-    const victoryText = this.add.text(400, 200, '任务完成!', { 
-        fontSize: '48px',
-        fill: '#fff',
-        stroke: '#000',
-        strokeThickness: 6,
-        fontStyle: 'bold'
-    }).setOrigin(0.5);
-    
-    this.tweens.add({
-        targets: victoryText,
-        scale: 1.5,
-        duration: 2000,
-        ease: 'Sine.easeInOut',
-        yoyo: true,
-        onComplete: function() {
-            endGame(true);
-        }
-    });
-    
-    // 禁用玩家移动
-    player.setVelocity(0, 0);
-    gameOver = true;
+    this.events.emit('gameOver');
 }
 
-// 游戏结束
-function endGame(victory) {
-    gameOver = true;
-    document.getElementById('final-score').textContent = score;
-    document.getElementById('game-over-screen').classList.remove('hidden');
-    
-    if (!victory) {
-        sounds.gameOver.play();
+// UI事件监听
+document.getElementById('restart-game').addEventListener('click', function() {
+    document.getElementById('game-over').classList.add('hidden');
+    restartGame();
+});
+
+document.getElementById('save-score').addEventListener('click', function() {
+    const playerName = document.getElementById('player-name').value.trim();
+    if (playerName) {
+        saveScore(playerName, score);
+    } else {
+        alert('请输入你的名字');
     }
-    
-    // 保存分数
-    saveScore(playerName, score);
-}
+});
 
-// 加载高分
-async function loadHighScores() {
-    try {
-        const response = await fetch('/api/score');
-        if (!response.ok) throw new Error('Failed to fetch high scores');
-        
-        const scores = await response.json();
-        const highScoresList = document.getElementById('high-scores-list');
-        
-        if (scores.length === 0) {
-            highScoresList.innerHTML = '<p>还没有记录</p>';
-            return;
-        }
-        
-        highScoresList.innerHTML = '';
-        scores.forEach((score, index) => {
-            const scoreItem = document.createElement('div');
-            scoreItem.className = 'score-item';
-            scoreItem.innerHTML = `
-                <span><span class="score-rank">#${index + 1}</span> ${score.player_name}</span>
-                <span>${score.score}</span>
-            `;
-            highScoresList.appendChild(scoreItem);
-        });
-    } catch (error) {
-        console.error('Error loading high scores:', error);
-        document.getElementById('high-scores-list').innerHTML = '<p>无法加载分数</p>';
+document.getElementById('view-high-scores').addEventListener('click', function() {
+    document.getElementById('game-over').classList.add('hidden');
+    fetchHighScores();
+});
+
+document.getElementById('close-scores').addEventListener('click', function() {
+    document.getElementById('high-scores').classList.add('hidden');
+    if (gameOver) {
+        document.getElementById('game-over').classList.remove('hidden');
     }
+});
+
+// 重启游戏
+function restartGame() {
+    score = 0;
+    lives = 3;
+    gameOver = false;
+    game.scene.getScene('default').scene.restart();
 }
 
-// 保存分数
+// 保存得分
 async function saveScore(playerName, score) {
     try {
         const response = await fetch('/api/score', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ player_name: playerName, score: score })
         });
         
-        if (!response.ok) throw new Error('Failed to save score');
-        
-        // 刷新高分列表
-        loadHighScores();
+        if (response.ok) {
+            fetchHighScores();
+        } else {
+            alert('保存分数失败');
+        }
     } catch (error) {
-        console.error('Error saving score:', error);
+        console.error('保存分数错误:', error);
+        alert('保存分数时出错');
     }
 }
 
-// 辅助函数 - 随机整数
-function randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+// 获取高分
+async function fetchHighScores() {
+    try {
+        const response = await fetch('/api/score');
+        if (response.ok) {
+            const scores = await response.json();
+            displayHighScores(scores);
+        } else {
+            alert('获取高分失败');
+        }
+    } catch (error) {
+        console.error('获取高分错误:', error);
+        alert('获取高分时出错');
+    }
+}
+
+// 显示高分榜
+function displayHighScores(scores) {
+    const scoresList = document.getElementById('scores-list');
+    scoresList.innerHTML = '';
+    
+    if (scores.length === 0) {
+        scoresList.innerHTML = '<p>暂无记录</p>';
+        return;
+    }
+    
+    scores.forEach((score, index) => {
+        const scoreItem = document.createElement('div');
+        scoreItem.className = 'score-item';
+        scoreItem.innerHTML = `
+            <span><span class="score-rank">#${index + 1}</span> ${score.player_name}</span>
+            <span>${score.score}</span>
+        `;
+        scoresList.appendChild(scoreItem);
+    });
+    
+    document.getElementById('high-scores').classList.remove('hidden');
 } 
