@@ -24,8 +24,13 @@ export class UI {
         // 创建加载屏幕
         this.createLoadingScreen();
         
+        // 创建暂停屏幕
+        this.createPauseScreen();
+        
         // 初始显示开始屏幕
         this.showScreen('start-screen');
+        
+        console.log("UI初始化完成");
     }
     
     createLoadingScreen() {
@@ -99,7 +104,30 @@ export class UI {
         }
     }
     
+    // 创建暂停屏幕
+    createPauseScreen() {
+        const pauseScreen = document.createElement('div');
+        pauseScreen.id = 'pause-screen';
+        pauseScreen.className = 'screen';
+        
+        const pauseTitle = document.createElement('h2');
+        pauseTitle.textContent = '游戏暂停';
+        pauseScreen.appendChild(pauseTitle);
+        
+        const resumeButton = document.createElement('button');
+        resumeButton.id = 'resume-button';
+        resumeButton.textContent = '继续游戏';
+        resumeButton.addEventListener('click', () => {
+            this.game.togglePause();
+        });
+        pauseScreen.appendChild(resumeButton);
+        
+        document.getElementById('game-ui').appendChild(pauseScreen);
+        console.log("暂停屏幕已创建");
+    }
+    
     registerEvents(game) {
+        console.log("注册UI事件");
         // 开始按钮
         this.startButton.addEventListener('click', () => {
             game.startGame();
@@ -137,6 +165,7 @@ export class UI {
     }
     
     showScreen(screenId) {
+        console.log("显示屏幕:", screenId);
         // 隐藏所有屏幕
         this.hideAllScreens();
         
@@ -144,6 +173,8 @@ export class UI {
         const screen = document.getElementById(screenId);
         if (screen) {
             screen.classList.add('active');
+        } else {
+            console.error("找不到屏幕:", screenId);
         }
     }
     
@@ -168,17 +199,13 @@ export class UI {
     
     updateHealth(health) {
         if (this.healthBar) {
-            const percent = health + '%';
-            this.healthBar.style.setProperty('--health-percent', percent);
-            this.healthBar.querySelector('::before').style.width = percent;
+            this.healthBar.style.width = `${health}%`;
         }
     }
     
     updateEnergy(energy) {
         if (this.energyBar) {
-            const percent = energy + '%';
-            this.energyBar.style.setProperty('--energy-percent', percent);
-            this.energyBar.querySelector('::before').style.width = percent;
+            this.energyBar.style.width = `${energy}%`;
         }
     }
     

@@ -9,10 +9,13 @@ export class InputHandler {
             }
             
             this.keys[e.key] = true;
+            console.log("按下按键: ", e.key); // 调试输出
         });
         
         window.addEventListener('keyup', (e) => {
             this.keys[e.key] = false;
         });
+        
+        console.log("输入处理器已初始化");
     }
 } 

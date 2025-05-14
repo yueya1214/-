@@ -63,6 +63,8 @@ export class Player {
             special: { frames: 5 },
             hurt: { frames: 1 }
         };
+        
+        console.log("玩家已创建");
     }
     
     update(deltaTime, input) {
@@ -251,65 +253,30 @@ export class Player {
             this.x = this.game.gameWidth - this.width;
         }
         
-        // 底部边界 - 游戏区域下方导致死亡
+        // 底部边界 - 游戏区域下方导致重置位置
         if (this.y > this.game.gameHeight) {
-            this.takeDamage(100); // 立即死亡
+            this.y = 300;
+            this.velocityY = 0;
         }
     }
     
     checkCollisions() {
-        // 与平台的碰撞
-        this.isGrounded = false;
-        
-        this.game.level.platforms.forEach(platform => {
-            if (this.collidesWith(platform)) {
-                // 从上方碰撞
-                if (this.velocityY > 0 && 
-                    this.y + this.height - this.velocityY <= platform.y) {
-                    this.isGrounded = true;
-                    this.y = platform.y - this.height;
-                    this.velocityY = 0;
-                }
-                // 从下方碰撞
-                else if (this.velocityY < 0 &&
-                        this.y >= platform.y + platform.height) {
-                    this.y = platform.y + platform.height;
-                    this.velocityY = 0;
-                }
-                // 从左侧碰撞
-                else if (this.velocityX > 0 && 
-                        this.x + this.width - this.velocityX <= platform.x) {
-                    this.x = platform.x - this.width;
-                }
-                // 从右侧碰撞
-                else if (this.velocityX < 0 && 
-                        this.x >= platform.x + platform.width) {
-                    this.x = platform.x + platform.width;
-                }
-            }
-        });
-        
-        // 与敌人的碰撞
-        if (!this.invulnerable) {
-            this.game.enemies.forEach(enemy => {
-                if (this.collidesWith(enemy)) {
-                    this.takeDamage(enemy.contactDamage);
-                    
-                    // 击退
-                    const direction = this.x < enemy.x ? -1 : 1;
-                    this.velocityX = direction * this.knockbackForce;
-                    this.velocityY = -this.knockbackForce / 2;
-                }
-            });
+        // 简单的地面碰撞
+        if (this.y + this.height > 500) {
+            this.y = 500 - this.height;
+            this.velocityY = 0;
+            this.isGrounded = true;
+        } else {
+            this.isGrounded = false;
         }
     }
     
     collidesWith(object) {
         return (
             this.x < object.x + object.width &&
-            this.x + this.hitboxWidth > object.x &&
+            this.x + this.width > object.x &&
             this.y < object.y + object.height &&
-            this.y + this.hitboxHeight > object.y
+            this.y + this.height > object.y
         );
     }
     
@@ -396,12 +363,7 @@ export class Player {
     }
     
     draw(ctx) {
-        // 闪烁效果（受伤无敌时间）
-        if (this.invulnerable && Math.floor(this.invulnerabilityTime / 5) % 2 === 0) {
-            ctx.globalAlpha = 0.5;
-        }
-        
-        // 绘制火柴人（使用简单图形代替精灵图）
+        // 绘制火柴人
         ctx.save();
         
         // 根据朝向翻转
@@ -411,277 +373,36 @@ export class Player {
             ctx.translate(-this.x, 0);
         }
         
-        // 根据状态绘制不同姿势的火柴人
-        switch (this.currentState) {
-            case this.states.IDLE:
-                this.drawStickmanIdle(ctx);
-                break;
-            case this.states.RUNNING:
-                this.drawStickmanRunning(ctx);
-                break;
-            case this.states.JUMPING:
-            case this.states.FALLING:
-                this.drawStickmanJumping(ctx);
-                break;
-            case this.states.ATTACKING:
-                this.drawStickmanAttacking(ctx);
-                break;
-            case this.states.SPECIAL:
-                this.drawStickmanSpecial(ctx);
-                break;
-            case this.states.HURT:
-                this.drawStickmanHurt(ctx);
-                break;
-            default:
-                this.drawStickmanIdle(ctx);
-        }
-        
-        ctx.restore();
-        ctx.globalAlpha = 1;
-        
-        // 调试 - 显示碰撞箱
-        if (false) { // 设为true启用调试
-            ctx.strokeStyle = 'red';
-            ctx.strokeRect(this.x, this.y, this.hitboxWidth, this.hitboxHeight);
-        }
-    }
-    
-    // 绘制各种姿势的火柴人
-    drawStickmanIdle(ctx) {
-        const x = this.x + this.width / 2;
-        const y = this.y + this.height / 2;
-        
         // 头部
         ctx.beginPath();
-        ctx.arc(x, y - 25, 10, 0, Math.PI * 2);
+        ctx.arc(this.x + this.width / 2, this.y + 15, 10, 0, Math.PI * 2);
         ctx.fillStyle = '#000';
         ctx.fill();
         
         // 身体
         ctx.beginPath();
-        ctx.moveTo(x, y - 15);
-        ctx.lineTo(x, y + 10);
+        ctx.moveTo(this.x + this.width / 2, this.y + 25);
+        ctx.lineTo(this.x + this.width / 2, this.y + 50);
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
         ctx.stroke();
         
         // 手臂
         ctx.beginPath();
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x + 15, y);
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x - 15, y);
+        ctx.moveTo(this.x + this.width / 2, this.y + 35);
+        ctx.lineTo(this.x + this.width / 2 + 15, this.y + 30);
+        ctx.moveTo(this.x + this.width / 2, this.y + 35);
+        ctx.lineTo(this.x + this.width / 2 - 15, this.y + 30);
         ctx.stroke();
         
         // 腿部
         ctx.beginPath();
-        ctx.moveTo(x, y + 10);
-        ctx.lineTo(x + 10, y + 30);
-        ctx.moveTo(x, y + 10);
-        ctx.lineTo(x - 10, y + 30);
-        ctx.stroke();
-    }
-    
-    drawStickmanRunning(ctx) {
-        const x = this.x + this.width / 2;
-        const y = this.y + this.height / 2;
-        const legOffset = 10 * Math.sin(this.frameX);
-        
-        // 头部
-        ctx.beginPath();
-        ctx.arc(x, y - 25, 10, 0, Math.PI * 2);
-        ctx.fillStyle = '#000';
-        ctx.fill();
-        
-        // 身体
-        ctx.beginPath();
-        ctx.moveTo(x, y - 15);
-        ctx.lineTo(x, y + 10);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
+        ctx.moveTo(this.x + this.width / 2, this.y + 50);
+        ctx.lineTo(this.x + this.width / 2 + 10, this.y + 70);
+        ctx.moveTo(this.x + this.width / 2, this.y + 50);
+        ctx.lineTo(this.x + this.width / 2 - 10, this.y + 70);
         ctx.stroke();
         
-        // 手臂 - 摆动
-        ctx.beginPath();
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x + 15 * Math.cos(this.frameX), y + 5 * Math.sin(this.frameX));
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x - 15 * Math.cos(this.frameX), y - 5 * Math.sin(this.frameX));
-        ctx.stroke();
-        
-        // 腿部 - 跑步动画
-        ctx.beginPath();
-        ctx.moveTo(x, y + 10);
-        ctx.lineTo(x + legOffset, y + 30);
-        ctx.moveTo(x, y + 10);
-        ctx.lineTo(x - legOffset, y + 30);
-        ctx.stroke();
-    }
-    
-    drawStickmanJumping(ctx) {
-        const x = this.x + this.width / 2;
-        const y = this.y + this.height / 2;
-        
-        // 头部
-        ctx.beginPath();
-        ctx.arc(x, y - 25, 10, 0, Math.PI * 2);
-        ctx.fillStyle = '#000';
-        ctx.fill();
-        
-        // 身体
-        ctx.beginPath();
-        ctx.moveTo(x, y - 15);
-        ctx.lineTo(x, y + 10);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // 手臂 - 举起
-        ctx.beginPath();
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x + 15, y - 10);
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x - 15, y - 10);
-        ctx.stroke();
-        
-        // 腿部 - 弯曲
-        ctx.beginPath();
-        ctx.moveTo(x, y + 10);
-        ctx.lineTo(x + 15, y + 20);
-        ctx.moveTo(x, y + 10);
-        ctx.lineTo(x - 15, y + 20);
-        ctx.stroke();
-    }
-    
-    drawStickmanAttacking(ctx) {
-        const x = this.x + this.width / 2;
-        const y = this.y + this.height / 2;
-        
-        // 头部
-        ctx.beginPath();
-        ctx.arc(x, y - 25, 10, 0, Math.PI * 2);
-        ctx.fillStyle = '#000';
-        ctx.fill();
-        
-        // 身体 - 略微倾斜
-        ctx.beginPath();
-        ctx.moveTo(x, y - 15);
-        ctx.lineTo(x - 5, y + 10);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // 手臂 - 攻击姿势
-        ctx.beginPath();
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x + 25, y);
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x - 10, y);
-        ctx.stroke();
-        
-        // 武器/拳头
-        ctx.beginPath();
-        ctx.arc(x + 25, y, 5, 0, Math.PI * 2);
-        ctx.fillStyle = '#f00';
-        ctx.fill();
-        
-        // 腿部
-        ctx.beginPath();
-        ctx.moveTo(x - 5, y + 10);
-        ctx.lineTo(x + 5, y + 30);
-        ctx.moveTo(x - 5, y + 10);
-        ctx.lineTo(x - 15, y + 30);
-        ctx.stroke();
-    }
-    
-    drawStickmanSpecial(ctx) {
-        const x = this.x + this.width / 2;
-        const y = this.y + this.height / 2;
-        
-        // 光环效果
-        ctx.beginPath();
-        ctx.arc(x, y, 20 + this.frameX * 3, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(51, 153, 255, 0.5)';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        
-        // 头部
-        ctx.beginPath();
-        ctx.arc(x, y - 25, 10, 0, Math.PI * 2);
-        ctx.fillStyle = '#000';
-        ctx.fill();
-        
-        // 身体
-        ctx.beginPath();
-        ctx.moveTo(x, y - 15);
-        ctx.lineTo(x, y + 10);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // 手臂 - 特殊姿势
-        ctx.beginPath();
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x + 20, y - 20);
-        ctx.moveTo(x, y - 5);
-        ctx.lineTo(x - 20, y - 20);
-        ctx.stroke();
-        
-        // 腿部
-        ctx.beginPath();
-        ctx.moveTo(x, y + 10);
-        ctx.lineTo(x + 10, y + 30);
-        ctx.moveTo(x, y + 10);
-        ctx.lineTo(x - 10, y + 30);
-        ctx.stroke();
-        
-        // 能量效果
-        for (let i = 0; i < 8; i++) {
-            const angle = (Math.PI * 2 / 8) * i;
-            const radius = 15 + this.frameX * 2;
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(
-                x + Math.cos(angle) * radius,
-                y + Math.sin(angle) * radius
-            );
-            ctx.strokeStyle = 'rgba(51, 153, 255, 0.7)';
-            ctx.stroke();
-        }
-    }
-    
-    drawStickmanHurt(ctx) {
-        const x = this.x + this.width / 2;
-        const y = this.y + this.height / 2;
-        
-        // 头部 - 略微倾斜
-        ctx.beginPath();
-        ctx.arc(x - 5, y - 20, 10, 0, Math.PI * 2);
-        ctx.fillStyle = '#000';
-        ctx.fill();
-        
-        // 身体 - 倾斜
-        ctx.beginPath();
-        ctx.moveTo(x - 5, y - 10);
-        ctx.lineTo(x, y + 15);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // 手臂 - 受伤姿势
-        ctx.beginPath();
-        ctx.moveTo(x - 5, y);
-        ctx.lineTo(x - 20, y - 5);
-        ctx.moveTo(x - 5, y);
-        ctx.lineTo(x + 10, y + 5);
-        ctx.stroke();
-        
-        // 腿部 - 受伤姿势
-        ctx.beginPath();
-        ctx.moveTo(x, y + 15);
-        ctx.lineTo(x - 15, y + 25);
-        ctx.moveTo(x, y + 15);
-        ctx.lineTo(x + 10, y + 30);
-        ctx.stroke();
+        ctx.restore();
     }
 } 

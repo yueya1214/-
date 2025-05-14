@@ -106,6 +106,8 @@ export class Level {
                 ]
             }
         ];
+
+        console.log(`关卡 ${levelNumber} 已创建`);
     }
     
     init() {
@@ -229,6 +231,23 @@ export class Level {
         // 绘制平台
         for (let i = 0; i < this.platforms.length; i++) {
             this.platforms[i].draw(ctx);
+        }
+
+        // 在关卡1绘制一些云
+        if (this.levelNumber === 1) {
+            // 绘制云朵
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.beginPath();
+            ctx.arc(200, 100, 30, 0, Math.PI * 2);
+            ctx.arc(230, 90, 25, 0, Math.PI * 2);
+            ctx.arc(260, 100, 30, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(500, 150, 25, 0, Math.PI * 2);
+            ctx.arc(530, 140, 20, 0, Math.PI * 2);
+            ctx.arc(560, 150, 25, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 } 
