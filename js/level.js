@@ -11,32 +11,9 @@ export class Level {
         this.backgrounds = [];
         this.levelData = null;
         this.gravity = 0.5;
-    }
-    
-    init() {
-        // 清空当前关卡数据
-        this.platforms = [];
-        this.backgrounds = [];
         
-        // 加载关卡数据
-        this.loadLevelData();
-        
-        // 创建背景
-        this.createBackground();
-        
-        // 创建平台
-        this.createPlatforms();
-        
-        // 创建敌人
-        this.createEnemies();
-        
-        // 创建收集物
-        this.createCollectibles();
-    }
-    
-    loadLevelData() {
-        // 关卡数据定义
-        const levels = [
+        // 预定义关卡数据，避免每次重新创建
+        this.levels = [
             // 关卡1 - 基础训练
             {
                 name: "基础训练",
@@ -129,57 +106,114 @@ export class Level {
                 ]
             }
         ];
+    }
+    
+    init() {
+        // 清空当前关卡数据
+        this.platforms = [];
+        this.backgrounds = [];
         
+        // 加载关卡数据 - 异步处理以避免阻塞
+        requestAnimationFrame(() => {
+            // 异步加载关卡对象
+            setTimeout(() => {
+                this.loadLevelData();
+                this.createBackground();
+                this.createPlatforms();
+                
+                // 创建敌人和收集物的数量较多，分批创建
+                setTimeout(() => {
+                    this.createEnemies();
+                    this.createCollectibles();
+                }, 50);
+            }, 0);
+        });
+    }
+    
+    loadLevelData() {
         // 获取当前关卡数据
-        this.levelData = levels[this.levelNumber - 1] || levels[0];
+        this.levelData = this.levels[this.levelNumber - 1] || this.levels[0];
     }
     
     createBackground() {
         // 使用简单的背景颜色
         this.backgroundColor = this.levelData.background.color || "#87CEEB";
         
-        // 创建视差背景层
-        // 注意：实际实现中需要加载图片，这里简化处理
+        // 创建视差背景层 - 使用更高效的方式
         this.backgrounds = [
-            new BackgroundLayer(0, 0, this.width, this.height, "#87CEEB", 0),
+            new BackgroundLayer(0, 0, this.width, this.height, this.backgroundColor, 0),
             new BackgroundLayer(0, 450, this.width, 150, "#5a3921", 0.2)
         ];
     }
     
     createPlatforms() {
-        // 创建平台
-        this.levelData.platforms.forEach(platform => {
-            this.platforms.push(
-                new Platform(
-                    platform.x,
-                    platform.y,
-                    platform.width,
-                    platform.height,
-                    platform.type
-                )
-            );
-        });
+        // 创建平台对象池以避免频繁创建和销毁
+        if (!this.platformPool) {
+            this.platformPool = [];
+        }
+        
+        // 获取关卡定义的平台数据
+        const platformsData = this.levelData.platforms;
+        
+        // 计算需要创建的平台数量
+        const count = platformsData.length;
+        
+        // 如果对象池大小不足，则扩展
+        while (this.platformPool.length < count) {
+            this.platformPool.push(new Platform(0, 0, 0, 0, "normal"));
+        }
+        
+        // 重用或创建平台对象
+        for (let i = 0; i < count; i++) {
+            const data = platformsData[i];
+            const platform = this.platformPool[i];
+            
+            // 重置平台属性
+            platform.x = data.x;
+            platform.y = data.y;
+            platform.width = data.width;
+            platform.height = data.height;
+            platform.type = data.type || "normal";
+            
+            // 添加到活动平台列表
+            this.platforms.push(platform);
+        }
     }
     
     createEnemies() {
-        // 创建敌人
-        this.levelData.enemies.forEach(enemy => {
-            this.game.createEnemy(enemy.x, enemy.y, enemy.type);
-        });
+        // 批量创建敌人以提高性能
+        const enemiesData = this.levelData.enemies;
+        
+        // 使用一个循环批量创建所有敌人
+        for (let i = 0; i < enemiesData.length; i++) {
+            const data = enemiesData[i];
+            this.game.createEnemy(data.x, data.y, data.type);
+        }
     }
     
     createCollectibles() {
-        // 创建收集物
-        this.levelData.collectibles.forEach(item => {
-            this.game.createCollectible(item.x, item.y, item.type);
-        });
+        // 批量创建收集物以提高性能
+        const collectiblesData = this.levelData.collectibles;
+        
+        // 使用一个循环批量创建所有收集物
+        for (let i = 0; i < collectiblesData.length; i++) {
+            const data = collectiblesData[i];
+            this.game.createCollectible(data.x, data.y, data.type);
+        }
     }
     
     update(deltaTime) {
         // 更新背景
-        this.backgrounds.forEach(layer => {
-            layer.update(this.game.player?.velocityX || 0);
-        });
+        for (let i = 0; i < this.backgrounds.length; i++) {
+            this.backgrounds[i].update(this.game.player?.velocityX || 0);
+        }
+        
+        // 更新平台
+        for (let i = 0; i < this.platforms.length; i++) {
+            if (this.platforms[i].isMoving) {
+                this.platforms[i].update();
+            }
+        }
     }
     
     draw(ctx) {
@@ -188,13 +222,13 @@ export class Level {
         ctx.fillRect(0, 0, this.width, this.height);
         
         // 绘制背景层
-        this.backgrounds.forEach(layer => {
-            layer.draw(ctx);
-        });
+        for (let i = 0; i < this.backgrounds.length; i++) {
+            this.backgrounds[i].draw(ctx);
+        }
         
         // 绘制平台
-        this.platforms.forEach(platform => {
-            platform.draw(ctx);
-        });
+        for (let i = 0; i < this.platforms.length; i++) {
+            this.platforms[i].draw(ctx);
+        }
     }
 } 

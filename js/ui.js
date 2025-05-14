@@ -21,8 +21,82 @@ export class UI {
         this.healthBar = document.getElementById('health-bar');
         this.energyBar = document.getElementById('energy-bar');
         
+        // 创建加载屏幕
+        this.createLoadingScreen();
+        
         // 初始显示开始屏幕
         this.showScreen('start-screen');
+    }
+    
+    createLoadingScreen() {
+        // 检查是否已存在加载屏幕
+        if (document.getElementById('loading-screen')) {
+            return;
+        }
+
+        // 创建加载屏幕
+        const loadingScreen = document.createElement('div');
+        loadingScreen.id = 'loading-screen';
+        loadingScreen.className = 'screen';
+
+        // 创建加载标题
+        const loadingTitle = document.createElement('h2');
+        loadingTitle.textContent = '加载中...';
+        loadingScreen.appendChild(loadingTitle);
+
+        // 创建进度条容器
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'progress-container';
+        progressContainer.style.width = '300px';
+        progressContainer.style.height = '20px';
+        progressContainer.style.backgroundColor = '#222';
+        progressContainer.style.border = '2px solid #555';
+        progressContainer.style.borderRadius = '10px';
+        progressContainer.style.overflow = 'hidden';
+        progressContainer.style.margin = '20px 0';
+
+        // 创建进度条
+        const progressBar = document.createElement('div');
+        progressBar.id = 'progress-bar';
+        progressBar.style.width = '0%';
+        progressBar.style.height = '100%';
+        progressBar.style.backgroundColor = '#f8d61c';
+        progressBar.style.transition = 'width 0.3s';
+        progressContainer.appendChild(progressBar);
+        loadingScreen.appendChild(progressContainer);
+
+        // 创建提示文本
+        const loadingTip = document.createElement('p');
+        loadingTip.id = 'loading-tip';
+        loadingTip.textContent = '准备冒险...';
+        loadingTip.style.fontSize = '16px';
+        loadingTip.style.color = '#aaa';
+        loadingScreen.appendChild(loadingTip);
+
+        // 将加载屏幕添加到游戏UI
+        document.getElementById('game-ui').appendChild(loadingScreen);
+    }
+    
+    updateLoadingProgress(progress) {
+        const progressBar = document.getElementById('progress-bar');
+        const loadingTip = document.getElementById('loading-tip');
+        
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+        }
+        
+        // 根据进度更新提示文本
+        if (loadingTip) {
+            if (progress < 25) {
+                loadingTip.textContent = '加载游戏资源...';
+            } else if (progress < 50) {
+                loadingTip.textContent = '准备关卡数据...';
+            } else if (progress < 75) {
+                loadingTip.textContent = '生成游戏世界...';
+            } else {
+                loadingTip.textContent = '即将开始！';
+            }
+        }
     }
     
     registerEvents(game) {
