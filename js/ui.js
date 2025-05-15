@@ -183,6 +183,12 @@ export class UI {
         screens.forEach(screen => {
             screen.classList.remove('active');
         });
+        
+        // 确保不隐藏HUD
+        const hud = document.getElementById('hud');
+        if (hud) {
+            hud.style.display = 'flex';
+        }
     }
     
     updateScore(score) {
@@ -199,13 +205,43 @@ export class UI {
     
     updateHealth(health) {
         if (this.healthBar) {
-            this.healthBar.style.width = `${health}%`;
+            console.log("更新生命值:", health);
+            const percent = health + '%';
+            this.healthBar.querySelector('::before') ? 
+                this.healthBar.querySelector('::before').style.width = percent :
+                this.healthBar.style.setProperty('--health-percent', percent);
+            
+            // 添加内联样式作为备用
+            const healthInner = document.createElement('div');
+            healthInner.style.width = percent;
+            healthInner.style.height = '100%';
+            healthInner.style.backgroundColor = '#ff3333';
+            healthInner.style.transition = 'width 0.3s';
+            
+            // 确保只有一个子元素
+            this.healthBar.innerHTML = '';
+            this.healthBar.appendChild(healthInner);
         }
     }
     
     updateEnergy(energy) {
         if (this.energyBar) {
-            this.energyBar.style.width = `${energy}%`;
+            console.log("更新能量值:", energy);
+            const percent = energy + '%';
+            this.energyBar.querySelector('::before') ?
+                this.energyBar.querySelector('::before').style.width = percent :
+                this.energyBar.style.setProperty('--energy-percent', percent);
+            
+            // 添加内联样式作为备用
+            const energyInner = document.createElement('div');
+            energyInner.style.width = percent;
+            energyInner.style.height = '100%';
+            energyInner.style.backgroundColor = '#3399ff';
+            energyInner.style.transition = 'width 0.3s';
+            
+            // 确保只有一个子元素
+            this.energyBar.innerHTML = '';
+            this.energyBar.appendChild(energyInner);
         }
     }
     

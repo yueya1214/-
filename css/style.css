@@ -145,6 +145,7 @@ button:active {
     flex-direction: column;
     gap: 10px;
     pointer-events: none;
+    z-index: 20;
 }
 
 #health-container, #energy-container {

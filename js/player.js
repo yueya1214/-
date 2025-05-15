@@ -13,56 +13,10 @@ export class Player {
         this.weight = 1;
         this.health = 100;
         this.energy = 100;
-        this.energyRegenRate = 0.1;
-        this.attackCooldown = 0;
-        this.attackDuration = 0;
-        this.isAttacking = false;
-        this.specialCooldown = 0;
-        this.specialCost = 30;
-        this.isUsingSpecial = false;
-        this.specialDuration = 0;
-        this.damage = 20;
-        this.specialDamage = 40;
-        this.hitboxWidth = 30;
-        this.hitboxHeight = 60;
         this.isGrounded = false;
         this.isFalling = false;
         this.isJumping = false;
         this.facingRight = true;
-        this.invulnerable = false;
-        this.invulnerabilityTime = 0;
-        this.maxInvulnerabilityTime = 60;
-        this.knockbackForce = 8;
-        
-        // 动画状态
-        this.states = {
-            IDLE: 'idle',
-            RUNNING: 'running',
-            JUMPING: 'jumping',
-            FALLING: 'falling',
-            ATTACKING: 'attacking',
-            SPECIAL: 'special',
-            HURT: 'hurt'
-        };
-        this.currentState = this.states.IDLE;
-        
-        // 简单动画系统
-        this.frameX = 0;
-        this.frameY = 0;
-        this.maxFrames = 5;
-        this.frameTimer = 0;
-        this.frameInterval = 100; // 毫秒
-        
-        // 初始化火柴人图像（简化处理，直接绘制）
-        this.sprites = {
-            idle: { frames: 1 },
-            running: { frames: 6 },
-            jumping: { frames: 1 },
-            falling: { frames: 1 },
-            attacking: { frames: 3 },
-            special: { frames: 5 },
-            hurt: { frames: 1 }
-        };
         
         console.log("玩家已创建");
     }
@@ -87,58 +41,11 @@ export class Player {
         // 摩擦力
         this.velocityX *= this.game.friction;
         
-        // 更新攻击冷却
-        if (this.attackCooldown > 0) {
-            this.attackCooldown -= deltaTime;
-        }
-        
-        // 更新攻击持续时间
-        if (this.attackDuration > 0) {
-            this.attackDuration -= deltaTime;
-            if (this.attackDuration <= 0) {
-                this.isAttacking = false;
-            }
-        }
-        
-        // 更新特殊攻击冷却
-        if (this.specialCooldown > 0) {
-            this.specialCooldown -= deltaTime;
-        }
-        
-        // 更新特殊攻击持续时间
-        if (this.specialDuration > 0) {
-            this.specialDuration -= deltaTime;
-            if (this.specialDuration <= 0) {
-                this.isUsingSpecial = false;
-            }
-        }
-        
-        // 恢复能量
-        if (this.energy < 100 && !this.isUsingSpecial) {
-            this.energy += this.energyRegenRate;
-            if (this.energy > 100) this.energy = 100;
-            this.game.ui.updateEnergy(this.energy);
-        }
-        
-        // 更新无敌时间
-        if (this.invulnerable) {
-            this.invulnerabilityTime -= deltaTime;
-            if (this.invulnerabilityTime <= 0) {
-                this.invulnerable = false;
-            }
-        }
-        
         // 边界检查
         this.checkBoundaries();
         
         // 碰撞检测
         this.checkCollisions();
-        
-        // 更新玩家状态
-        this.updateState();
-        
-        // 更新动画
-        this.updateAnimation(deltaTime);
     }
     
     handleInput(keys) {
@@ -156,94 +63,18 @@ export class Player {
             this.velocityY = this.jumpForce;
             this.isGrounded = false;
             this.isJumping = true;
-            this.game.soundManager.playSound('jump');
+            console.log("跳跃!");
         }
         
         // 攻击
-        if (keys.z && this.attackCooldown <= 0 && !this.isAttacking) {
-            this.attack();
+        if (keys.z) {
+            console.log("攻击!");
         }
         
         // 特殊技能
-        if (keys.x && this.specialCooldown <= 0 && this.energy >= this.specialCost && !this.isUsingSpecial) {
-            this.useSpecial();
+        if (keys.x) {
+            console.log("使用特殊技能!");
         }
-    }
-    
-    attack() {
-        this.isAttacking = true;
-        this.attackCooldown = 500; // 0.5秒冷却
-        this.attackDuration = 300; // 0.3秒攻击动作
-        this.game.soundManager.playSound('attack');
-        
-        // 检查是否击中敌人
-        this.game.enemies.forEach(enemy => {
-            if (this.isAttackHitting(enemy)) {
-                enemy.takeDamage(this.damage);
-                this.game.createParticles(
-                    enemy.x, 
-                    enemy.y, 
-                    5, 
-                    '#ffaa00'
-                );
-            }
-        });
-    }
-    
-    useSpecial() {
-        this.isUsingSpecial = true;
-        this.specialCooldown = 2000; // 2秒冷却
-        this.specialDuration = 500; // 0.5秒特殊动作
-        this.energy -= this.specialCost;
-        this.game.ui.updateEnergy(this.energy);
-        this.game.soundManager.playSound('special');
-        
-        // 特殊技能效果 - 范围攻击
-        this.game.enemies.forEach(enemy => {
-            const dx = enemy.x - this.x;
-            const dy = enemy.y - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < 150) { // 范围攻击半径
-                enemy.takeDamage(this.specialDamage);
-                
-                // 击退效果
-                const knockbackX = dx / distance * this.knockbackForce;
-                const knockbackY = dy / distance * this.knockbackForce;
-                enemy.velocityX = knockbackX;
-                enemy.velocityY = knockbackY;
-                
-                this.game.createParticles(
-                    enemy.x, 
-                    enemy.y, 
-                    10, 
-                    '#3399ff'
-                );
-            }
-        });
-        
-        // 创建特效
-        this.game.createParticles(
-            this.x, 
-            this.y, 
-            20, 
-            '#3399ff'
-        );
-    }
-    
-    isAttackHitting(enemy) {
-        // 攻击范围计算
-        let attackRange = 30;
-        let attackX = this.facingRight ? this.x + this.width/2 : this.x - attackRange;
-        
-        return (
-            (this.facingRight ? 
-                (attackX < enemy.x + enemy.width && this.x + this.width > enemy.x) :
-                (attackX + attackRange > enemy.x && this.x < enemy.x + enemy.width)
-            ) &&
-            this.y + this.hitboxHeight > enemy.y &&
-            this.y < enemy.y + enemy.height
-        );
     }
     
     checkBoundaries() {
@@ -278,88 +109,6 @@ export class Player {
             this.y < object.y + object.height &&
             this.y + this.height > object.y
         );
-    }
-    
-    takeDamage(amount) {
-        if (!this.invulnerable) {
-            this.health -= amount;
-            if (this.health < 0) this.health = 0;
-            
-            this.game.ui.updateHealth(this.health);
-            this.game.soundManager.playSound('hurt');
-            
-            // 受伤动画和无敌时间
-            this.currentState = this.states.HURT;
-            this.invulnerable = true;
-            this.invulnerabilityTime = this.maxInvulnerabilityTime;
-            
-            // 创建受伤粒子效果
-            this.game.createParticles(
-                this.x + this.width/2, 
-                this.y + this.height/2, 
-                10, 
-                '#ff3333'
-            );
-        }
-    }
-    
-    updateState() {
-        // 更新当前状态
-        if (this.isAttacking) {
-            this.currentState = this.states.ATTACKING;
-        } else if (this.isUsingSpecial) {
-            this.currentState = this.states.SPECIAL;
-        } else if (this.isJumping) {
-            this.currentState = this.states.JUMPING;
-        } else if (this.isFalling) {
-            this.currentState = this.states.FALLING;
-        } else if (Math.abs(this.velocityX) > 0.5) {
-            this.currentState = this.states.RUNNING;
-        } else {
-            this.currentState = this.states.IDLE;
-        }
-    }
-    
-    updateAnimation(deltaTime) {
-        // 更新帧率
-        this.frameTimer += deltaTime;
-        
-        if (this.frameTimer > this.frameInterval) {
-            this.frameTimer = 0;
-            
-            if (this.frameX < this.sprites[this.currentState].frames - 1) {
-                this.frameX++;
-            } else {
-                this.frameX = 0;
-            }
-        }
-        
-        // 根据状态设置帧行
-        switch (this.currentState) {
-            case this.states.IDLE:
-                this.frameY = 0;
-                break;
-            case this.states.RUNNING:
-                this.frameY = 1;
-                break;
-            case this.states.JUMPING:
-                this.frameY = 2;
-                break;
-            case this.states.FALLING:
-                this.frameY = 3;
-                break;
-            case this.states.ATTACKING:
-                this.frameY = 4;
-                break;
-            case this.states.SPECIAL:
-                this.frameY = 5;
-                break;
-            case this.states.HURT:
-                this.frameY = 6;
-                break;
-            default:
-                this.frameY = 0;
-        }
     }
     
     draw(ctx) {

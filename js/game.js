@@ -2,10 +2,6 @@ import { Player } from './player.js';
 import { Level } from './level.js';
 import { InputHandler } from './input.js';
 import { UI } from './ui.js';
-import { Enemy } from './enemy.js';
-import { Particle } from './particle.js';
-import { CollectibleItem } from './collectible.js';
-import { SoundManager } from './sound.js';
 
 export class Game {
     constructor() {
@@ -33,10 +29,6 @@ export class Game {
         this.paused = false;
         this.levelComplete = false;
         
-        this.enemies = [];
-        this.particles = [];
-        this.collectibles = [];
-        
         // 游戏状态
         this.states = {
             MENU: 0,
@@ -48,14 +40,6 @@ export class Game {
             INSTRUCTIONS: 6
         };
         this.currentState = this.states.MENU;
-        
-        // 用于性能监控
-        this.fpsCounter = 0;
-        this.fpsTimer = 0;
-        this.currentFps = 0;
-        
-        // 加载状态
-        this.loadingProgress = 0;
         
         // 初始化游戏
         this.init();
@@ -104,8 +88,10 @@ export class Game {
         // 创建关卡
         this.level = new Level(1, this);
         
-        // 隐藏所有屏幕
+        // 隐藏所有屏幕但保留HUD
         this.ui.hideAllScreens();
+        // 显示HUD
+        document.getElementById('hud').style.display = 'flex';
         
         // 更新UI
         this.ui.updateScore(this.score);
@@ -119,6 +105,8 @@ export class Game {
     }
     
     animate(timestamp) {
+        this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
+        
         const deltaTime = Math.min(timestamp - this.lastTime, 33);
         this.lastTime = timestamp;
         
@@ -126,28 +114,50 @@ export class Game {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         if (this.currentState === this.states.PLAYING) {
-            // 绘制游戏背景
-            this.ctx.fillStyle = '#87CEEB';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            
-            // 绘制地面
-            this.ctx.fillStyle = '#3a7d2d';
-            this.ctx.fillRect(0, 500, this.canvas.width, 100);
-            
-            // 更新和绘制玩家
-            if (this.player) {
-                this.player.update(deltaTime, this.input.keys);
-                this.player.draw(this.ctx);
+            try {
+                // 确保HUD在PLAYING状态下可见
+                document.getElementById('hud').style.display = 'flex';
+                
+                // 绘制游戏背景
+                this.ctx.fillStyle = '#87CEEB';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制地面
+                this.ctx.fillStyle = '#3a7d2d';
+                this.ctx.fillRect(0, 500, this.canvas.width, 100);
+                
+                // 更新和绘制玩家
+                if (this.player) {
+                    this.player.update(deltaTime, this.input.keys);
+                    this.player.draw(this.ctx);
+                }
+                
+                // 更新和绘制关卡
+                if (this.level) {
+                    this.level.update(deltaTime);
+                    this.level.draw(this.ctx);
+                }
+                
+                // 调试信息
+                this.ctx.fillStyle = 'white';
+                this.ctx.font = '14px Arial';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText(`FPS: ${Math.round(1000 / deltaTime)}`, 10, 20);
+                this.ctx.fillText(`玩家位置: X:${Math.round(this.player?.x || 0)} Y:${Math.round(this.player?.y || 0)}`, 10, 40);
+            } catch (error) {
+                console.error("游戏循环出错:", error);
+                // 显示错误到画布
+                this.ctx.fillStyle = '#333';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.fillStyle = '#ff0000';
+                this.ctx.font = '20px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(`游戏运行错误: ${error.message}`, this.canvas.width / 2, this.canvas.height / 2);
             }
-            
-            // 更新和绘制关卡
-            if (this.level) {
-                this.level.update(deltaTime);
-                this.level.draw(this.ctx);
-            }
+        } else {
+            // 如果不在PLAYING状态，确保HUD隐藏
+            document.getElementById('hud').style.display = 'none';
         }
-        
-        this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
     }
     
     togglePause() {
@@ -166,4 +176,4 @@ export class Game {
 window.addEventListener('DOMContentLoaded', () => {
     console.log("DOM加载完成，创建游戏实例...");
     window.game = new Game();
-}); 
+});
