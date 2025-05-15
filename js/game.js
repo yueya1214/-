@@ -6,6 +6,10 @@ import { UI } from './ui.js';
 export class Game {
     constructor() {
         console.log("游戏初始化中...");
+        
+        // 调试模式标志
+        this.DEBUG = true;
+        
         this.canvas = document.getElementById('game-canvas');
         this.ctx = this.canvas.getContext('2d', { alpha: false });
         
@@ -94,12 +98,15 @@ export class Game {
         
         // 计算地面位置 - 位于屏幕底部上方100像素
         this.groundLevel = this.gameHeight - 100;
+        console.log("地面位置设置为:", this.groundLevel);
         
         // 创建玩家 - 位于屏幕左侧，离地面一定高度
         this.player = new Player(100, this.groundLevel - 200, 50, 80, this);
+        console.log("玩家已创建:", this.player);
         
         // 创建关卡
         this.level = new Level(1, this);
+        console.log("关卡已创建:", this.level);
         
         // 隐藏所有屏幕但保留HUD
         this.ui.hideAllScreens();
@@ -125,6 +132,17 @@ export class Game {
         
         // 清除画布
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // 添加调试信息（仅当第一次进入游戏状态时）
+        if (this.currentState === this.states.PLAYING && this.DEBUG) {
+            if (!this._debugGameStarted) {
+                console.log("游戏状态: PLAYING");
+                console.log("玩家状态:", this.player);
+                console.log("关卡状态:", this.level);
+                console.log("动画循环开始");
+                this._debugGameStarted = true;
+            }
+        }
         
         if (this.currentState === this.states.PLAYING) {
             try {
@@ -186,6 +204,105 @@ export class Game {
             this.currentState = this.states.PLAYING;
             this.ui.hideAllScreens();
         }
+    }
+    
+    nextLevel() {
+        console.log("进入下一关卡...");
+        
+        // 增加关卡
+        this.currentLevel++;
+        if (this.currentLevel > this.maxLevel) {
+            // 如果到达最后一关，则返回第一关
+            this.currentLevel = 1;
+        }
+        
+        // 计算地面位置 - 确保与startGame一致
+        this.groundLevel = this.gameHeight - 100;
+        
+        // 重置玩家位置
+        if (this.player) {
+            this.player.x = 100;
+            this.player.y = this.groundLevel - 200;
+            this.player.velocityX = 0;
+            this.player.velocityY = 0;
+        }
+        
+        // 创建新关卡
+        this.level = new Level(this.currentLevel, this);
+        
+        // 隐藏所有屏幕但保留HUD
+        this.ui.hideAllScreens();
+        
+        // 更新UI
+        this.ui.updateLevel(this.currentLevel);
+        
+        // 切换到游戏状态
+        this.currentState = this.states.PLAYING;
+    }
+    
+    restart() {
+        console.log("重新开始游戏...");
+        
+        // 重置关卡
+        this.currentLevel = 1;
+        
+        // 重置分数
+        this.score = 0;
+        
+        // 计算地面位置 - 确保与startGame一致
+        this.groundLevel = this.gameHeight - 100;
+        
+        // 创建玩家
+        this.player = new Player(100, this.groundLevel - 200, 50, 80, this);
+        
+        // 创建关卡
+        this.level = new Level(1, this);
+        
+        // 隐藏所有屏幕但保留HUD
+        this.ui.hideAllScreens();
+        
+        // 更新UI
+        this.ui.updateScore(this.score);
+        this.ui.updateLevel(this.currentLevel);
+        this.ui.updateHealth(100);
+        this.ui.updateEnergy(100);
+        
+        // 切换到游戏状态
+        this.currentState = this.states.PLAYING;
+    }
+    
+    // 创建敌人对象 - 目前简单实现为控制台记录
+    createEnemy(x, y, type) {
+        console.log(`创建敌人: (${x}, ${y}) 类型:${type}`);
+        // 将来实现真正的敌人创建 - 简单起见现在只记录信息
+        return {
+            x, y, type,
+            width: 40,
+            height: 60,
+            draw(ctx) {
+                // 绘制简单的敌人图形
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        };
+    }
+    
+    // 创建可收集物品 - 目前简单实现为控制台记录
+    createCollectible(x, y, type) {
+        console.log(`创建收集物: (${x}, ${y}) 类型:${type}`);
+        // 将来实现真正的收集物创建 - 简单起见现在只记录信息
+        return {
+            x, y, type,
+            width: 20,
+            height: 20,
+            draw(ctx) {
+                // 绘制简单的收集物图形
+                ctx.fillStyle = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        };
     }
 }
 

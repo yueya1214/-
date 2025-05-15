@@ -9,6 +9,8 @@ export class Level {
         this.height = game.gameHeight;
         this.platforms = [];
         this.backgrounds = [];
+        this.enemies = []; // 存储敌人
+        this.collectibles = []; // 存储收集物
         this.levelData = null;
         this.gravity = 0.5;
         
@@ -193,25 +195,53 @@ export class Level {
     }
     
     createEnemies() {
+        // 清空当前敌人列表
+        this.enemies = [];
+        
         // 批量创建敌人以提高性能
-        const enemiesData = this.levelData.enemies;
+        const enemiesData = this.levelData.enemies || [];
         
         // 使用一个循环批量创建所有敌人
         for (let i = 0; i < enemiesData.length; i++) {
             const data = enemiesData[i];
-            this.game.createEnemy(data.x, data.y, data.type);
+            
+            // 调整敌人的Y坐标，与平台调整逻辑一致
+            const originalFixedGroundY = 500;
+            const adjustedY = data.y - originalFixedGroundY + this.game.groundLevel;
+            
+            // 创建敌人并添加到数组
+            const enemy = this.game.createEnemy(data.x, adjustedY, data.type);
+            if (enemy) {
+                this.enemies.push(enemy);
+            }
         }
+        
+        console.log(`创建了 ${this.enemies.length} 个敌人`);
     }
     
     createCollectibles() {
+        // 清空当前收集物列表
+        this.collectibles = [];
+        
         // 批量创建收集物以提高性能
-        const collectiblesData = this.levelData.collectibles;
+        const collectiblesData = this.levelData.collectibles || [];
         
         // 使用一个循环批量创建所有收集物
         for (let i = 0; i < collectiblesData.length; i++) {
             const data = collectiblesData[i];
-            this.game.createCollectible(data.x, data.y, data.type);
+            
+            // 调整收集物的Y坐标，与平台调整逻辑一致
+            const originalFixedGroundY = 500;
+            const adjustedY = data.y - originalFixedGroundY + this.game.groundLevel;
+            
+            // 创建收集物并添加到数组
+            const collectible = this.game.createCollectible(data.x, adjustedY, data.type);
+            if (collectible) {
+                this.collectibles.push(collectible);
+            }
         }
+        
+        console.log(`创建了 ${this.collectibles.length} 个收集物`);
     }
     
     update(deltaTime) {
@@ -241,6 +271,20 @@ export class Level {
         // 绘制平台
         for (let i = 0; i < this.platforms.length; i++) {
             this.platforms[i].draw(ctx);
+        }
+        
+        // 绘制收集物
+        for (let i = 0; i < this.collectibles.length; i++) {
+            if (this.collectibles[i].draw) {
+                this.collectibles[i].draw(ctx);
+            }
+        }
+        
+        // 绘制敌人
+        for (let i = 0; i < this.enemies.length; i++) {
+            if (this.enemies[i].draw) {
+                this.enemies[i].draw(ctx);
+            }
         }
 
         // 在关卡1绘制一些云
