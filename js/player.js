@@ -92,9 +92,9 @@ export class Player {
     }
     
     checkCollisions() {
-        // 简单的地面碰撞
-        if (this.y + this.height > 500) {
-            this.y = 500 - this.height;
+        // 简单的地面碰撞 - 使用游戏中的groundLevel
+        if (this.y + this.height > this.game.groundLevel) {
+            this.y = this.game.groundLevel - this.height;
             this.velocityY = 0;
             this.isGrounded = true;
         } else {

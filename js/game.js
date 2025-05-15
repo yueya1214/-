@@ -8,8 +8,18 @@ export class Game {
         console.log("游戏初始化中...");
         this.canvas = document.getElementById('game-canvas');
         this.ctx = this.canvas.getContext('2d', { alpha: false });
-        this.canvas.width = 800;
-        this.canvas.height = 600;
+        
+        // 设置canvas尺寸为窗口大小
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        
+        // 监听窗口大小变化，调整canvas尺寸
+        window.addEventListener('resize', () => {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+            this.gameWidth = this.canvas.width;
+            this.gameHeight = this.canvas.height;
+        });
         
         // 首先创建UI
         this.ui = new UI(this);
@@ -82,8 +92,11 @@ export class Game {
         this.gameOver = false;
         this.levelComplete = false;
         
-        // 创建玩家
-        this.player = new Player(100, 300, 50, 80, this);
+        // 计算地面位置 - 位于屏幕底部上方100像素
+        this.groundLevel = this.gameHeight - 100;
+        
+        // 创建玩家 - 位于屏幕左侧，离地面一定高度
+        this.player = new Player(100, this.groundLevel - 200, 50, 80, this);
         
         // 创建关卡
         this.level = new Level(1, this);
@@ -122,9 +135,9 @@ export class Game {
                 this.ctx.fillStyle = '#87CEEB';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
                 
-                // 绘制地面
+                // 绘制地面 - 使用自适应的groundLevel
                 this.ctx.fillStyle = '#3a7d2d';
-                this.ctx.fillRect(0, 500, this.canvas.width, 100);
+                this.ctx.fillRect(0, this.groundLevel, this.canvas.width, this.canvas.height - this.groundLevel);
                 
                 // 更新和绘制玩家
                 if (this.player) {

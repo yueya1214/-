@@ -107,6 +107,9 @@ export class Level {
             }
         ];
 
+        // 初始化关卡
+        this.init();
+        
         console.log(`关卡 ${levelNumber} 已创建`);
     }
     
@@ -139,12 +142,12 @@ export class Level {
     
     createBackground() {
         // 使用简单的背景颜色
-        this.backgroundColor = this.levelData.background.color || "#87CEEB";
+        this.backgroundColor = this.levelData?.background?.color || "#87CEEB";
         
         // 创建视差背景层 - 使用更高效的方式
         this.backgrounds = [
             new BackgroundLayer(0, 0, this.width, this.height, this.backgroundColor, 0),
-            new BackgroundLayer(0, 450, this.width, 150, "#5a3921", 0.2)
+            new BackgroundLayer(0, this.game.groundLevel - 50, this.width, this.height - this.game.groundLevel + 50, "#5a3921", 0.2)
         ];
     }
     
@@ -235,18 +238,21 @@ export class Level {
 
         // 在关卡1绘制一些云
         if (this.levelNumber === 1) {
-            // 绘制云朵
+            // 绘制云朵 - 根据屏幕大小调整位置
+            const cloudHeight1 = this.height * 0.2;
+            const cloudHeight2 = this.height * 0.3;
+            
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.beginPath();
-            ctx.arc(200, 100, 30, 0, Math.PI * 2);
-            ctx.arc(230, 90, 25, 0, Math.PI * 2);
-            ctx.arc(260, 100, 30, 0, Math.PI * 2);
+            ctx.arc(this.width * 0.25, cloudHeight1, 30, 0, Math.PI * 2);
+            ctx.arc(this.width * 0.25 + 30, cloudHeight1 - 10, 25, 0, Math.PI * 2);
+            ctx.arc(this.width * 0.25 + 60, cloudHeight1, 30, 0, Math.PI * 2);
             ctx.fill();
             
             ctx.beginPath();
-            ctx.arc(500, 150, 25, 0, Math.PI * 2);
-            ctx.arc(530, 140, 20, 0, Math.PI * 2);
-            ctx.arc(560, 150, 25, 0, Math.PI * 2);
+            ctx.arc(this.width * 0.6, cloudHeight2, 25, 0, Math.PI * 2);
+            ctx.arc(this.width * 0.6 + 30, cloudHeight2 - 10, 20, 0, Math.PI * 2);
+            ctx.arc(this.width * 0.6 + 60, cloudHeight2, 25, 0, Math.PI * 2);
             ctx.fill();
         }
     }
