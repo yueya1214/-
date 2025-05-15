@@ -19,8 +19,8 @@ export class BackgroundLayer {
     }
     
     draw(ctx) {
-        if (this.image) {
-            // 使用图像作为背景
+        if (this.image && this.image.complete && this.image.width > 0 && this.image.height > 0) {
+            // 图像有效且已完全加载，使用图像作为背景
             // 绘制两次以确保无缝循环
             ctx.drawImage(this.image, this.x + this.offset, this.y, this.width, this.height);
             
@@ -89,6 +89,20 @@ export class BackgroundLayer {
     
     // 设置背景图像
     setImage(image) {
+        // 确保图像在设置前已经完全加载
+        if (image && (!image.complete || image.width === 0 || image.height === 0)) {
+            console.log("警告: 尝试设置一个未完全加载的图像。将使用颜色背景直到图像加载完成。");
+            
+            // 添加加载完成的处理程序
+            image.onload = () => {
+                console.log("背景图像已加载完成:", image.width, "x", image.height);
+                this.image = image;
+            };
+            
+            // 暂时不设置图像，等待加载完成
+            return this;
+        }
+        
         this.image = image;
         return this;
     }

@@ -44,13 +44,23 @@ export class Platform {
     
     // 创建缓存画布，预渲染平台
     createCacheCanvas() {
-        this.cacheCanvas = document.createElement('canvas');
-        this.cacheCanvas.width = this.width;
-        this.cacheCanvas.height = this.height;
-        this.cacheCtx = this.cacheCanvas.getContext('2d');
+        // 确保宽度和高度都大于0
+        if (this.width <= 0 || this.height <= 0) {
+            console.error("无法创建缓存画布：宽度或高度为0", this.width, this.height);
+            return;
+        }
         
-        // 预渲染平台到缓存画布
-        this.renderToCache();
+        try {
+            this.cacheCanvas = document.createElement('canvas');
+            this.cacheCanvas.width = Math.max(1, this.width);  // 确保至少为1像素
+            this.cacheCanvas.height = Math.max(1, this.height); // 确保至少为1像素
+            this.cacheCtx = this.cacheCanvas.getContext('2d');
+            
+            // 预渲染平台到缓存画布
+            this.renderToCache();
+        } catch (error) {
+            console.error("创建缓存画布时出错:", error.message);
+        }
     }
     
     // 更新平台尺寸或类型时重新渲染缓存
@@ -123,9 +133,29 @@ export class Platform {
     }
     
     draw(ctx) {
-        // 使用缓存画布直接绘制
-        if (this.cacheCanvas) {
-            ctx.drawImage(this.cacheCanvas, this.x, this.y);
+        // 使用缓存画布直接绘制 - 先检查缓存画布是否有效
+        if (this.cacheCanvas && this.cacheCanvas.width > 0 && this.cacheCanvas.height > 0) {
+            try {
+                ctx.drawImage(this.cacheCanvas, this.x, this.y);
+            } catch (error) {
+                console.error("平台绘制错误:", error.message);
+                console.log("平台信息:", this.x, this.y, this.width, this.height, this.type);
+                console.log("缓存画布:", this.cacheCanvas.width, this.cacheCanvas.height);
+                
+                // 出错时使用备用方法绘制
+                ctx.fillStyle = this.colors[this.type] || this.colors.normal;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        } else {
+            // 如果缓存画布无效，则直接绘制
+            ctx.fillStyle = this.colors[this.type] || this.colors.normal;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            
+            // 尝试重新创建缓存画布
+            if (!this.cacheCanvas || this.cacheCanvas.width === 0 || this.cacheCanvas.height === 0) {
+                console.log("尝试重新创建平台缓存画布");
+                this.createCacheCanvas();
+            }
         }
     }
     

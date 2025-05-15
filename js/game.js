@@ -88,40 +88,63 @@ export class Game {
     
     startGame() {
         console.log("开始游戏...");
-        this.currentState = this.states.PLAYING;
         
-        // 重置游戏状态
-        this.score = 0;
-        this.currentLevel = 1;
-        this.gameOver = false;
-        this.levelComplete = false;
-        
-        // 计算地面位置 - 位于屏幕底部上方100像素
-        this.groundLevel = this.gameHeight - 100;
-        console.log("地面位置设置为:", this.groundLevel);
-        
-        // 创建玩家 - 位于屏幕左侧，离地面一定高度
-        this.player = new Player(100, this.groundLevel - 200, 50, 80, this);
-        console.log("玩家已创建:", this.player);
-        
-        // 创建关卡
-        this.level = new Level(1, this);
-        console.log("关卡已创建:", this.level);
-        
-        // 隐藏所有屏幕但保留HUD
-        this.ui.hideAllScreens();
-        // 显示HUD
-        document.getElementById('hud').style.display = 'flex';
-        
-        // 更新UI
-        this.ui.updateScore(this.score);
-        this.ui.updateLevel(this.currentLevel);
-        this.ui.updateHealth(100);
-        this.ui.updateEnergy(100);
-        
-        // 启动游戏循环
-        this.lastTime = performance.now();
-        this.animate(this.lastTime);
+        try {
+            this.currentState = this.states.PLAYING;
+            
+            // 重置游戏状态
+            this.score = 0;
+            this.currentLevel = 1;
+            this.gameOver = false;
+            this.levelComplete = false;
+            
+            // 计算地面位置 - 位于屏幕底部上方100像素
+            this.groundLevel = this.gameHeight - 100;
+            console.log("地面位置设置为:", this.groundLevel);
+            
+            // 创建玩家 - 位于屏幕左侧，离地面一定高度
+            this.player = new Player(100, this.groundLevel - 200, 50, 80, this);
+            console.log("玩家已创建:", this.player);
+            
+            // 创建关卡
+            console.log("开始创建关卡...");
+            this.level = new Level(1, this);
+            console.log("关卡创建完成:", this.level);
+            
+            // 隐藏所有屏幕但保留HUD
+            console.log("隐藏屏幕...");
+            this.ui.hideAllScreens();
+            
+            // 显示HUD
+            console.log("显示HUD...");
+            const hud = document.getElementById('hud');
+            if (hud) {
+                hud.style.display = 'flex';
+                console.log("HUD显示设置为flex");
+            } else {
+                console.error("找不到HUD元素!");
+            }
+            
+            // 更新UI
+            console.log("更新UI...");
+            this.ui.updateScore(this.score);
+            this.ui.updateLevel(this.currentLevel);
+            this.ui.updateHealth(100);
+            this.ui.updateEnergy(100);
+            
+            // 启动游戏循环
+            console.log("启动游戏循环...");
+            this.lastTime = performance.now();
+            this.animate(this.lastTime);
+            console.log("游戏开始完成!");
+        } catch (error) {
+            console.error("游戏开始过程中出错:", error);
+            alert("游戏启动错误: " + error.message);
+            
+            // 尝试恢复到菜单状态
+            this.currentState = this.states.MENU;
+            this.ui.showScreen('start-screen');
+        }
     }
     
     animate(timestamp) {
