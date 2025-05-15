@@ -23,6 +23,11 @@ export class Game {
             this.canvas.height = window.innerHeight;
             this.gameWidth = this.canvas.width;
             this.gameHeight = this.canvas.height;
+            
+            // 重新计算地面位置
+            if (this.currentState === this.states.PLAYING) {
+                this.groundLevel = this.gameHeight - 100;
+            }
         });
         
         // 首先创建UI
@@ -54,6 +59,15 @@ export class Game {
             INSTRUCTIONS: 6
         };
         this.currentState = this.states.MENU;
+        
+        // 键盘控制提示
+        this.keyboardControls = {
+            "左/右方向键": "移动",
+            "空格键": "跳跃/二段跳",
+            "Z键": "攻击",
+            "X键": "特殊技能",
+            "ESC键": "暂停游戏"
+        };
         
         // 初始化游戏
         this.init();
@@ -132,6 +146,9 @@ export class Game {
             this.ui.updateHealth(100);
             this.ui.updateEnergy(100);
             
+            // 记录开始时间戳（用于显示控制提示）
+            this.startTimestamp = performance.now();
+            
             // 启动游戏循环
             console.log("启动游戏循环...");
             this.lastTime = performance.now();
@@ -185,13 +202,20 @@ export class Game {
                 }
                 
                 // 调试信息
-                this.ctx.fillStyle = 'white'; // 确保调试文字颜色可见
-                this.ctx.font = '14px Arial';
-                this.ctx.textAlign = 'left';
-                this.ctx.fillText(`FPS: ${Math.round(1000 / deltaTime)}`, 10, 20);
-                this.ctx.fillText(`玩家位置: X:${Math.round(this.player?.x || 0)} Y:${Math.round(this.player?.y || 0)}`, 10, 40);
-                this.ctx.fillText(`关卡: ${this.currentLevel}`, 10, 60);
-                this.ctx.fillText(`平台数: ${this.level?.platforms?.length || 0}`, 10, 80);
+                if (this.DEBUG) {
+                    this.drawDebugInfo(deltaTime);
+                } else {
+                    // 非调试模式下的基本信息
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = '14px Arial';
+                    this.ctx.textAlign = 'left';
+                    this.ctx.fillText(`关卡: ${this.currentLevel}`, 10, 60);
+                }
+                
+                // 添加操作提示（只在游戏开始几秒内显示）
+                if (timestamp - this.startTimestamp < 5000) {
+                    this.drawControlsHelp();
+                }
 
             } catch (error) {
                 console.error("游戏循环出错:", error);
@@ -214,6 +238,97 @@ export class Game {
             // 如果是菜单状态，并且 drawTestScreen 存在，则调用它
             if (this.currentState === this.states.MENU && this.drawTestScreen) {
                 this.drawTestScreen(); 
+            }
+        }
+    }
+    
+    // 绘制调试信息
+    drawDebugInfo(deltaTime) {
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'left';
+        
+        // 左上角信息
+        this.ctx.fillText(`FPS: ${Math.round(1000 / deltaTime)}`, 10, 20);
+        this.ctx.fillText(`玩家位置: X:${Math.round(this.player?.x || 0)} Y:${Math.round(this.player?.y || 0)}`, 10, 40);
+        this.ctx.fillText(`关卡: ${this.currentLevel}`, 10, 60);
+        this.ctx.fillText(`平台数: ${this.level?.platforms?.length || 0}`, 10, 80);
+        this.ctx.fillText(`地面高度: ${this.groundLevel}`, 10, 100);
+        
+        // 右上角的玩家物理信息
+        this.ctx.textAlign = 'right';
+        this.ctx.fillText(`速度X: ${this.player?.velocityX.toFixed(2) || 0}`, this.gameWidth - 10, 20);
+        this.ctx.fillText(`速度Y: ${this.player?.velocityY.toFixed(2) || 0}`, this.gameWidth - 10, 40);
+        this.ctx.fillText(`地面状态: ${this.player?.isGrounded}`, this.gameWidth - 10, 60);
+        this.ctx.fillText(`跳跃状态: ${this.player?.isJumping}`, this.gameWidth - 10, 80);
+        
+        // 绘制网格背景（帮助定位）
+        this.drawGrid(50);
+    }
+    
+    // 绘制操作提示
+    drawControlsHelp() {
+        const padding = 20;
+        const boxWidth = 200;
+        const boxHeight = 150;
+        const x = this.gameWidth - boxWidth - padding;
+        const y = this.gameHeight - boxHeight - padding;
+        
+        // 半透明背景
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        this.ctx.fillRect(x, y, boxWidth, boxHeight);
+        
+        // 标题
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = 'bold 16px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('操作提示', x + boxWidth/2, y + 25);
+        
+        // 控制说明
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'left';
+        
+        let yOffset = 50;
+        for (const [key, action] of Object.entries(this.keyboardControls)) {
+            this.ctx.fillText(`${key}: ${action}`, x + 15, y + yOffset);
+            yOffset += 20;
+        }
+    }
+    
+    // 绘制调试网格
+    drawGrid(gridSize) {
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        this.ctx.lineWidth = 0.5;
+        
+        // 垂直线
+        for (let x = 0; x < this.gameWidth; x += gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.gameHeight);
+            this.ctx.stroke();
+            
+            // 每100像素添加标记
+            if (x % 100 === 0) {
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                this.ctx.font = '10px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(x.toString(), x, 10);
+            }
+        }
+        
+        // 水平线
+        for (let y = 0; y < this.gameHeight; y += gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(this.gameWidth, y);
+            this.ctx.stroke();
+            
+            // 每100像素添加标记
+            if (y % 100 === 0) {
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                this.ctx.font = '10px Arial';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText(y.toString(), 5, y + 10);
             }
         }
     }

@@ -14,7 +14,7 @@ export class Level {
         this.levelData = null;
         this.gravity = 0.5;
         
-        // 预定义关卡数据，避免每次重新创建
+        // 优化的关卡数据，调整平台位置和尺寸，创建更有趣的关卡
         this.levels = [
             // 关卡1 - 基础训练
             {
@@ -27,20 +27,30 @@ export class Level {
                     ]
                 },
                 platforms: [
+                    // 左侧地面
                     { x: 0, y: 500, width: 200, height: 100, type: "grass" },
-                    { x: 250, y: 500, width: 200, height: 100, type: "grass" },
-                    { x: 500, y: 450, width: 200, height: 150, type: "grass" },
+                    
+                    // 中间跳跃平台
+                    { x: 250, y: 450, width: 120, height: 20, type: "grass" },
+                    { x: 420, y: 400, width: 100, height: 20, type: "grass" },
+                    { x: 570, y: 350, width: 80, height: 20, type: "grass" },
+                    
+                    // 高处平台
+                    { x: 700, y: 280, width: 100, height: 20, type: "grass" },
+                    { x: 500, y: 200, width: 120, height: 20, type: "grass" },
+                    
+                    // 右侧地面
                     { x: 750, y: 500, width: 200, height: 100, type: "grass" }
                 ],
                 enemies: [
-                    { x: 300, y: 450, type: "basic" },
-                    { x: 600, y: 400, type: "basic" }
+                    { x: 300, y: 400, type: "basic" },
+                    { x: 600, y: 300, type: "basic" }
                 ],
                 collectibles: [
-                    { x: 100, y: 450, type: "coin" },
-                    { x: 400, y: 450, type: "coin" },
-                    { x: 550, y: 400, type: "energy" },
-                    { x: 700, y: 450, type: "health" }
+                    { x: 300, y: 400, type: "coin" },
+                    { x: 450, y: 350, type: "coin" },
+                    { x: 600, y: 300, type: "energy" },
+                    { x: 750, y: 230, type: "health" }
                 ]
             },
             
@@ -55,21 +65,31 @@ export class Level {
                     ]
                 },
                 platforms: [
+                    // 左侧地面和升降梯
                     { x: 0, y: 500, width: 200, height: 100, type: "metal" },
                     { x: 250, y: 450, width: 100, height: 20, type: "metal" },
-                    { x: 400, y: 400, width: 100, height: 20, type: "metal" },
-                    { x: 550, y: 350, width: 100, height: 20, type: "metal" },
-                    { x: 650, y: 450, width: 200, height: 150, type: "metal" }
+                    
+                    // 中间跳跃挑战
+                    { x: 400, y: 400, width: 80, height: 20, type: "metal" },
+                    { x: 520, y: 350, width: 80, height: 20, type: "metal" },
+                    { x: 640, y: 300, width: 80, height: 20, type: "metal" },
+                    
+                    // 高处平台
+                    { x: 400, y: 250, width: 120, height: 20, type: "metal" },
+                    { x: 200, y: 200, width: 120, height: 20, type: "metal" },
+                    
+                    // 右侧地面
+                    { x: 700, y: 450, width: 200, height: 150, type: "metal" }
                 ],
                 enemies: [
                     { x: 300, y: 400, type: "robot" },
-                    { x: 550, y: 300, type: "robot" },
-                    { x: 700, y: 400, type: "turret" }
+                    { x: 600, y: 250, type: "robot" },
+                    { x: 750, y: 400, type: "turret" }
                 ],
                 collectibles: [
-                    { x: 280, y: 400, type: "coin" },
-                    { x: 430, y: 350, type: "coin" },
-                    { x: 580, y: 300, type: "energy" },
+                    { x: 300, y: 400, type: "coin" },
+                    { x: 450, y: 350, type: "coin" },
+                    { x: 600, y: 200, type: "energy" },
                     { x: 500, y: 500, type: "health" }
                 ]
             },
@@ -85,24 +105,36 @@ export class Level {
                     ]
                 },
                 platforms: [
+                    // 左侧起点
                     { x: 0, y: 500, width: 150, height: 100, type: "stone" },
-                    { x: 200, y: 550, width: 100, height: 50, type: "stone" },
-                    { x: 350, y: 450, width: 100, height: 20, type: "stone" },
-                    { x: 500, y: 400, width: 100, height: 20, type: "stone" },
-                    { x: 650, y: 350, width: 100, height: 20, type: "stone" },
-                    { x: 800, y: 500, width: 100, height: 100, type: "stone" }
+                    
+                    // 跨越熔岩的平台
+                    { x: 200, y: 500, width: 80, height: 20, type: "stone" },
+                    { x: 350, y: 450, width: 80, height: 20, type: "stone" },
+                    { x: 480, y: 400, width: 80, height: 20, type: "stone" },
+                    
+                    // 升降平台
+                    { x: 620, y: 350, width: 80, height: 20, type: "stone" },
+                    
+                    // 顶部平台
+                    { x: 500, y: 280, width: 100, height: 20, type: "stone" },
+                    { x: 350, y: 220, width: 100, height: 20, type: "stone" },
+                    { x: 200, y: 180, width: 100, height: 20, type: "stone" },
+                    
+                    // BOSS平台
+                    { x: 700, y: 350, width: 200, height: 250, type: "stone" }
                 ],
                 enemies: [
-                    { x: 200, y: 500, type: "basic" },
+                    { x: 200, y: 450, type: "basic" },
                     { x: 350, y: 400, type: "robot" },
                     { x: 500, y: 350, type: "robot" },
-                    { x: 650, y: 300, type: "turret" },
-                    { x: 750, y: 450, type: "boss" }
+                    { x: 620, y: 300, type: "turret" },
+                    { x: 750, y: 300, type: "boss" }
                 ],
                 collectibles: [
-                    { x: 280, y: 500, type: "coin" },
-                    { x: 430, y: 400, type: "coin" },
-                    { x: 580, y: 350, type: "energy" },
+                    { x: 280, y: 450, type: "coin" },
+                    { x: 430, y: 350, type: "coin" },
+                    { x: 580, y: 200, type: "energy" },
                     { x: 400, y: 500, type: "health" },
                     { x: 750, y: 300, type: "star" }
                 ]
@@ -175,6 +207,9 @@ export class Level {
         
         const originalFixedGroundY = 500; // 假设原始关卡设计基于地面y=500
 
+        // 清空当前平台列表
+        this.platforms = [];
+
         // 重用或创建平台对象
         for (let i = 0; i < count; i++) {
             const data = platformsData[i];
@@ -191,7 +226,50 @@ export class Level {
             
             // 添加到活动平台列表
             this.platforms.push(platform);
+            
+            // 为特定平台添加特殊属性（如移动或单向穿过）
+            // 关卡1 - 让特定平台移动
+            if (this.levelNumber === 1) {
+                // 让第三个平台水平移动
+                if (i === 2) {
+                    platform.setMoving(1, 100, 'x');
+                }
+                // 让高处平台可以从下方穿过
+                if (i === 4 || i === 5) {
+                    platform.setPassThrough();
+                }
+            }
+            // 关卡2 - 更多移动平台
+            else if (this.levelNumber === 2) {
+                // 让几个平台垂直移动
+                if (i === 1) {
+                    platform.setMoving(0.8, 70, 'y');
+                }
+                if (i === 3) {
+                    platform.setMoving(1.2, 50, 'x');
+                }
+                // 让高处平台可以从下方穿过
+                if (i === 5 || i === 6) {
+                    platform.setPassThrough();
+                }
+            }
+            // 关卡3 - 复杂的平台移动
+            else if (this.levelNumber === 3) {
+                // 熔岩上的几个平台添加移动
+                if (i === 1) {
+                    platform.setMoving(0.5, 50, 'x');
+                }
+                if (i === 3) {
+                    platform.setMoving(0.8, 60, 'y');
+                }
+                // 顶部平台可从下方穿过
+                if (i >= 5 && i <= 7) {
+                    platform.setPassThrough();
+                }
+            }
         }
+        
+        console.log(`创建了 ${this.platforms.length} 个平台`);
     }
     
     createEnemies() {
