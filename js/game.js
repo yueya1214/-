@@ -131,32 +131,27 @@ export class Game {
                 // 确保HUD在PLAYING状态下可见
                 document.getElementById('hud').style.display = 'flex';
                 
-                // 绘制游戏背景
-                this.ctx.fillStyle = '#87CEEB';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                
-                // 绘制地面 - 使用自适应的groundLevel
-                this.ctx.fillStyle = '#3a7d2d';
-                this.ctx.fillRect(0, this.groundLevel, this.canvas.width, this.canvas.height - this.groundLevel);
-                
-                // 更新和绘制玩家
-                if (this.player) {
-                    this.player.update(deltaTime, this.input.keys);
-                    this.player.draw(this.ctx);
-                }
-                
-                // 更新和绘制关卡
+                // 1. 更新和绘制关卡 (背景、平台等)
                 if (this.level) {
                     this.level.update(deltaTime);
                     this.level.draw(this.ctx);
                 }
                 
+                // 2. 更新和绘制玩家 (在关卡之上)
+                if (this.player) {
+                    this.player.update(deltaTime, this.input.keys);
+                    this.player.draw(this.ctx);
+                }
+                
                 // 调试信息
-                this.ctx.fillStyle = 'white';
+                this.ctx.fillStyle = 'white'; // 确保调试文字颜色可见
                 this.ctx.font = '14px Arial';
                 this.ctx.textAlign = 'left';
                 this.ctx.fillText(`FPS: ${Math.round(1000 / deltaTime)}`, 10, 20);
                 this.ctx.fillText(`玩家位置: X:${Math.round(this.player?.x || 0)} Y:${Math.round(this.player?.y || 0)}`, 10, 40);
+                this.ctx.fillText(`关卡: ${this.currentLevel}`, 10, 60);
+                this.ctx.fillText(`平台数: ${this.level?.platforms?.length || 0}`, 10, 80);
+
             } catch (error) {
                 console.error("游戏循环出错:", error);
                 // 显示错误到画布
@@ -169,7 +164,16 @@ export class Game {
             }
         } else {
             // 如果不在PLAYING状态，确保HUD隐藏
-            document.getElementById('hud').style.display = 'none';
+            // (除非特定屏幕需要它，例如游戏结束屏幕可能也使用部分HUD元素)
+            const hudElement = document.getElementById('hud');
+            if (hudElement) {
+                 hudElement.style.display = 'none';
+            }
+           
+            // 如果是菜单状态，并且 drawTestScreen 存在，则调用它
+            if (this.currentState === this.states.MENU && this.drawTestScreen) {
+                this.drawTestScreen(); 
+            }
         }
     }
     

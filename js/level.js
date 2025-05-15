@@ -118,21 +118,24 @@ export class Level {
         this.platforms = [];
         this.backgrounds = [];
         
-        // 加载关卡数据 - 异步处理以避免阻塞
-        requestAnimationFrame(() => {
-            // 异步加载关卡对象
-            setTimeout(() => {
-                this.loadLevelData();
-                this.createBackground();
-                this.createPlatforms();
-                
-                // 创建敌人和收集物的数量较多，分批创建
-                setTimeout(() => {
-                    this.createEnemies();
-                    this.createCollectibles();
-                }, 50);
-            }, 0);
-        });
+        // 同步加载关卡数据、背景和平台
+        this.loadLevelData();
+        
+        // 确保levelData已加载，否则后续创建会失败
+        if (!this.levelData) {
+            console.error("关卡数据 (this.levelData) 未能成功加载！");
+            // 可以考虑加载一个默认的空关卡或显示错误
+            this.levelData = { name: "Error Level", background: { color: "#ff0000" }, platforms: [], enemies: [], collectibles: [] };
+        }
+        
+        this.createBackground();
+        this.createPlatforms();
+        
+        // 同步创建敌人和收集物
+        this.createEnemies();
+        this.createCollectibles();
+        
+        console.log("关卡同步初始化完成。平台数量:", this.platforms.length);
     }
     
     loadLevelData() {
@@ -168,6 +171,8 @@ export class Level {
             this.platformPool.push(new Platform(0, 0, 0, 0, "normal"));
         }
         
+        const originalFixedGroundY = 500; // 假设原始关卡设计基于地面y=500
+
         // 重用或创建平台对象
         for (let i = 0; i < count; i++) {
             const data = platformsData[i];
@@ -175,7 +180,9 @@ export class Level {
             
             // 重置平台属性
             platform.x = data.x;
-            platform.y = data.y;
+            // 调整y坐标以适应动态的groundLevel
+            // 平台原始y值 - 原始地面y值 + 新的地面y值
+            platform.y = data.y - originalFixedGroundY + this.game.groundLevel;
             platform.width = data.width;
             platform.height = data.height;
             platform.type = data.type || "normal";

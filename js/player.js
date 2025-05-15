@@ -86,7 +86,8 @@ export class Player {
         
         // 底部边界 - 游戏区域下方导致重置位置
         if (this.y > this.game.gameHeight) {
-            this.y = 300;
+            // 重置到初始生成位置附近的高度，相对于groundLevel
+            this.y = this.game.groundLevel - 200; 
             this.velocityY = 0;
         }
     }
